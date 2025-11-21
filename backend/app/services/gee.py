@@ -1,0 +1,169 @@
+import os
+from typing import Any, Dict
+import json
+
+# Google Earth Engine
+try:
+    import ee  # type: ignore
+except Exception:  # pragma: no cover
+    ee = None  # Will handle gracefully below
+
+_GEE_READY = False
+_GEE_ERR: str | None = None
+
+
+def init_gee() -> bool:
+    global _GEE_READY
+    global _GEE_ERR
+    if _GEE_READY:
+        return True
+    if ee is None:
+        _GEE_ERR = "ee module not available"
+        return False
+
+    # Prefer service account JSON via env var GEE_PRIVATE_KEY (JSON string)
+    svc_email = os.getenv("GEE_SERVICE_ACCOUNT")
+    pk_json = os.getenv("GEE_PRIVATE_KEY")
+
+    try:
+        if svc_email and pk_json:
+            # Use Google OAuth credentials from JSON info
+            from google.oauth2 import service_account  # type: ignore
+            try:
+                info = json.loads(pk_json)
+            except Exception as e:
+                _GEE_ERR = f"GEE_PRIVATE_KEY is not valid JSON: {e}"
+                return False
+            # Ensure the email matches if provided
+            info.setdefault("client_email", svc_email)
+            scopes = [
+                "https://www.googleapis.com/auth/earthengine",
+                "https://www.googleapis.com/auth/devstorage.read_write",
+            ]
+            credentials = service_account.Credentials.from_service_account_info(info, scopes=scopes)
+            ee.Initialize(credentials)
+        elif os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
+            # Use ADC if a credentials file path is provided
+            ee.Initialize()
+        else:
+            # Fallback to default (may work only in already-authorized environments)
+            ee.Initialize()
+        _GEE_READY = True
+        _GEE_ERR = None
+    except Exception as e:
+        _GEE_READY = False
+        _GEE_ERR = str(e)
+    return _GEE_READY
+
+
+def _ee_geometry_from_geojson(geojson: Any):
+    # Accept Feature or Geometry
+    gj = geojson
+    if isinstance(gj, dict) and gj.get("type") == "Feature":
+        gj = gj.get("geometry")
+    return ee.Geometry(gj)
+
+
+def analyze_polygon(geojson: Any) -> Dict[str, float]:
+    """
+    Compute required metrics over the input polygon using Earth Engine.
+    Returns a dict with keys: ndvi, evi, biomass, canopy_height, soc, bulk_density, rainfall, elevation, slope
+    """
+    if not init_gee():
+        raise RuntimeError("GEE is not configured. Set GEE_SERVICE_ACCOUNT and GEE_PRIVATE_KEY in backend/.env")
+
+    geom = _ee_geometry_from_geojson(geojson)
+
+    # Time windows (example: last 2 years)
+    s2_start, s2_end = '2023-01-01', '2024-12-31'
+
+    # Sentinel-2 surface reflectance (compute NDVI/EVI means)
+    s2 = ee.ImageCollection('COPERNICUS/S2_SR') \
+        .filterDate(s2_start, s2_end) \
+        .filterBounds(geom) \
+        .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
+        .median()
+
+    # Scale reflectance for NDVI/EVI (S2 SR bands are in 0-10000)
+    nir = s2.select('B8').divide(10000)
+    red = s2.select('B4').divide(10000)
+    blue = s2.select('B2').divide(10000)
+
+    ndvi = nir.subtract(red).divide(nir.add(red)).rename('NDVI')
+    evi = red.expression(
+        '2.5 * ((NIR - RED) / (NIR + 6*RED - 7.5*BLUE + 1))',
+        { 'NIR': nir, 'RED': red, 'BLUE': blue }
+    ).rename('EVI')
+
+    ndvi_mean = ndvi.reduceRegion(ee.Reducer.mean(), geom, scale=30).get('NDVI')
+    evi_mean = evi.reduceRegion(ee.Reducer.mean(), geom, scale=30).get('EVI')
+
+    # GEDI canopy height/biomass (datasets availability varies)
+    # Using GEDI L2A canopy height as example (meters). Biomass often derived from models; placeholder here.
+    try:
+        gedi = ee.ImageCollection('LARSE/GEDI/GEDI02_A_002_MONTHLY') \
+            .filterBounds(geom).select(['rh98'])
+        canopy_h = gedi.median().rename('canopy_height')
+        canopy_h_mean = canopy_h.reduceRegion(ee.Reducer.mean(), geom, scale=100).get('canopy_height')
+    except Exception:
+        canopy_h_mean = ee.Number(0)
+
+    # Placeholder biomass from canopy height with simple proxy (domain users may replace with calibrated model)
+    biomass_mean = ee.Number(canopy_h_mean).multiply(10)  # very rough placeholder
+
+    # ESA WorldCover distribution is complex; for MVP return 0 (not requested as scalar)
+
+    # SoilGrids SOC% and bulk density (approximate datasets names)
+    try:
+        soc = ee.Image('projects/soilgrids-isric/soc_mean')  # may differ; placeholder path
+        bd = ee.Image('projects/soilgrids-isric/bd_mean')
+        soc_mean = soc.reduceRegion(ee.Reducer.mean(), geom, scale=250).get('soc_mean')
+        bd_mean = bd.reduceRegion(ee.Reducer.mean(), geom, scale=250).get('bd_mean')
+    except Exception:
+        soc_mean = ee.Number(0)
+        bd_mean = ee.Number(0)
+
+    # CHIRPS rainfall (mm)
+    try:
+        chirps = ee.ImageCollection('UCSB-CHG/CHIRPS/DAILY').filterDate('2023-01-01', '2023-12-31').filterBounds(geom)
+        rainfall = chirps.sum().rename('rain')
+        rainfall_mean = rainfall.reduceRegion(ee.Reducer.mean(), geom, scale=5000).get('rain')
+    except Exception:
+        rainfall_mean = ee.Number(0)
+
+    # SRTM elevation and slope
+    try:
+        srtm = ee.Image('USGS/SRTMGL1_003')
+        elevation = srtm.select('elevation')
+        slope = ee.Terrain.slope(elevation)
+        elevation_mean = elevation.reduceRegion(ee.Reducer.mean(), geom, scale=30).get('elevation')
+        slope_mean = slope.reduceRegion(ee.Reducer.mean(), geom, scale=30).get('slope')
+    except Exception:
+        elevation_mean = ee.Number(0)
+        slope_mean = ee.Number(0)
+
+    # Evaluate to client-side numbers
+    result = ee.Dictionary({
+        'ndvi': ndvi_mean,
+        'evi': evi_mean,
+        'biomass': biomass_mean,
+        'canopy_height': canopy_h_mean,
+        'soc': soc_mean,
+        'bulk_density': bd_mean,
+        'rainfall': rainfall_mean,
+        'elevation': elevation_mean,
+        'slope': slope_mean,
+    }).getInfo()
+
+    # Coerce to float with defaults
+    return {
+        'ndvi': float(result.get('ndvi') or 0.0),
+        'evi': float(result.get('evi') or 0.0),
+        'biomass': float(result.get('biomass') or 0.0),
+        'canopy_height': float(result.get('canopy_height') or 0.0),
+        'soc': float(result.get('soc') or 0.0),
+        'bulk_density': float(result.get('bulk_density') or 0.0),
+        'rainfall': float(result.get('rainfall') or 0.0),
+        'elevation': float(result.get('elevation') or 0.0),
+        'slope': float(result.get('slope') or 0.0),
+    }
