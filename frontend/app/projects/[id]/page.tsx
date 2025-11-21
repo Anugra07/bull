@@ -14,6 +14,7 @@ export default function ProjectPage() {
   const params = useParams();
   const router = useRouter();
   const [authed, setAuthed] = useState<boolean | null>(null);
+  const [project, setProject] = useState<{ name: string; description?: string | null } | null>(null);
   const [polygon, setPolygon] = useState<any | null>(null);
   const [busy, setBusy] = useState(false);
   const [metrics, setMetrics] = useState<null | {
@@ -46,10 +47,62 @@ export default function ProjectPage() {
     const init = async () => {
       const { data } = await supabase.auth.getSession();
       setAuthed(!!data.session);
-      if (!data.session) router.push("/login");
+      if (!data.session) {
+        router.push("/login");
+        return;
+      }
+
+      // Load existing project data if project ID is valid
+      const projectId = String(params.id);
+      if (projectId && projectId !== "demo") {
+        try {
+          // Load project info
+          const projectData = await api.getProject(projectId);
+          setProject({ name: projectData.name, description: projectData.description });
+          
+          // Load existing polygons
+          const polygons = await api.listPolygons(projectId);
+          if (polygons && polygons.length > 0) {
+            // Use the most recent polygon
+            const latestPolygon = polygons[0];
+            setPolygon(latestPolygon.geometry);
+            
+            // Load existing results
+            const results = await api.getResults(projectId);
+            if (results && results.length > 0) {
+              const latestResult = results[0];
+              // Set metrics if available
+              if (latestResult.ndvi !== null && latestResult.ndvi !== undefined) {
+                setMetrics({
+                  ndvi: latestResult.ndvi ?? 0,
+                  evi: latestResult.evi ?? 0,
+                  biomass: latestResult.biomass ?? 0,
+                  canopy_height: latestResult.canopy_height ?? 0,
+                  soc: latestResult.soc ?? 0,
+                  bulk_density: latestResult.bulk_density ?? 0,
+                  rainfall: latestResult.rainfall ?? 0,
+                  elevation: latestResult.elevation ?? 0,
+                  slope: latestResult.slope ?? 0,
+                });
+              }
+              // Set compute results
+              setCompute({
+                carbon_biomass: latestResult.carbon_biomass,
+                soc_total: latestResult.soc_total,
+                annual_co2: latestResult.annual_co2,
+                co2_20yr: latestResult.co2_20yr,
+                risk_adjusted_co2: latestResult.risk_adjusted_co2,
+              });
+            }
+          }
+        } catch (e) {
+          // Silently fail - project might not have data yet
+          console.log("Could not load existing project data:", e);
+        }
+      }
     };
     init();
-  }, [router]);
+  }, [router, params.id]);
 
   const onPolygon = (gj: any) => {
     setPolygon(gj);
@@ -108,7 +161,14 @@ export default function ProjectPage() {
 
   return (
     <main className="py-6 space-y-6">
-      <h1 className="text-xl font-semibold">Project: {String(params.id)}</h1>
+      <div>
+        <h1 className="text-xl font-semibold">
+          {project ? project.name : `Project: ${String(params.id)}`}
+        </h1>
+        {project?.description && (
+          <p className="text-sm text-gray-600 mt-1">{project.description}</p>
+        )}
+      </div>
       <div className="flex flex-col md:flex-row gap-4">
         <div className="flex-1 space-y-4">
           <MapDraw onPolygon={onPolygon} />

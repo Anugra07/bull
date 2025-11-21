@@ -72,6 +72,8 @@ export default function DashboardPage() {
                   const p = await api.createProject({ user_id: userId, name, description: desc });
                   setProjects((prev) => [p, ...prev]);
                   setName(""); setDesc("");
+                  // Redirect to the new project page
+                  window.location.href = `/projects/${p.id}`;
                 } finally {
                   setCreating(false);
                 }

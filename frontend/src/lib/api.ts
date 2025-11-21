@@ -17,6 +17,7 @@ async function http<T>(path: string, options?: RequestInit): Promise<T> {
 
 export type Project = { id: string; user_id: string; name: string; description?: string | null };
 export type PolygonResult = { id: string; project_id: string; area_m2: number; bbox: number[] };
+export type PolygonWithGeometry = PolygonResult & { geometry: any };
 export type AnalysisResult = {
   ndvi: number;
   evi: number;
@@ -52,8 +53,24 @@ export const api = {
   createProject: (payload: { user_id: string; name: string; description?: string | null }) =>
     http<Project>(`/projects`, { method: "POST", body: JSON.stringify(payload) }),
 
+  getProject: (project_id: string) =>
+    http<Project>(`/projects/${encodeURIComponent(project_id)}`),
+
+  listProjects: (user_id: string) =>
+    http<Project[]>(`/projects?user_id=${encodeURIComponent(user_id)}`),
+
   createPolygon: (payload: { project_id: string; geometry: any }) =>
     http<PolygonResult>(`/polygons`, { method: "POST", body: JSON.stringify(payload) }),
+
+  getPolygon: (polygon_id: string) =>
+    http<PolygonWithGeometry>(`/polygons/${encodeURIComponent(polygon_id)}`),
+
+  listPolygons: (project_id?: string) => {
+    const url = project_id 
+      ? `/polygons?project_id=${encodeURIComponent(project_id)}`
+      : `/polygons`;
+    return http<PolygonWithGeometry[]>(url);
+  },
 
   analyze: (payload: { polygon_id?: string; geometry?: any }) =>
     http<AnalysisResult>(`/analysis`, { method: "POST", body: JSON.stringify(payload) }),
@@ -61,6 +78,10 @@ export const api = {
   compute: (payload: { project_id: string; polygon_id: string; fire_risk?: number; drought_risk?: number; trend_loss?: number }) =>
     http<ComputeResult>(`/compute`, { method: "POST", body: JSON.stringify(payload) }),
 
-  listProjects: (user_id: string) =>
-    http<Project[]>(`/projects?user_id=${encodeURIComponent(user_id)}`),
+  getResults: (project_id?: string) => {
+    const url = project_id 
+      ? `/compute?project_id=${encodeURIComponent(project_id)}`
+      : `/compute`;
+    return http<ComputeResult[]>(url);
+  },
 };

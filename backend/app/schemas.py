@@ -24,6 +24,9 @@ class PolygonOut(BaseModel):
     area_m2: float
     bbox: list[float]
 
+class PolygonOutWithGeometry(PolygonOut):
+    geometry: Any  # GeoJSON geometry
+
 
 class AnalysisIn(BaseModel):
     polygon_id: Optional[str] = None

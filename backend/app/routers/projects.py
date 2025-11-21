@@ -13,11 +13,33 @@ def create_project(payload: ProjectCreate):
             "name": payload.name,
             "description": payload.description,
         }
-        res = sb.table("projects").insert(data).select("id,user_id,name,description").single().execute()
-        if not res.data:
+        # Insert - Supabase returns the inserted row by default
+        res = sb.table("projects").insert(data).execute()
+        if not res.data or len(res.data) == 0:
             raise HTTPException(status_code=500, detail="Failed to create project")
+        # Return the inserted row
+        inserted = res.data[0]
+        return {
+            "id": inserted["id"],
+            "user_id": inserted["user_id"],
+            "name": inserted["name"],
+            "description": inserted.get("description"),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{project_id}", response_model=ProjectOut)
+def get_project(project_id: str):
+    sb = get_supabase()
+    try:
+        res = sb.table("projects").select("id,user_id,name,description").eq("id", project_id).single().execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Project not found")
         return res.data
     except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
         raise HTTPException(status_code=500, detail=str(e))
 
 

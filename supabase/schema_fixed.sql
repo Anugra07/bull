@@ -82,16 +82,20 @@ create policy "users can insert own polygons" on public.project_polygons
   );
 
 -- Results: owner of parent project can select/insert
-create policy if not exists "users can read own results" on public.project_results
+drop policy if exists "users can read own results" on public.project_results;
+create policy "users can read own results" on public.project_results
   for select using (
     exists (
       select 1 from public.projects p
       where p.id = project_id and p.user_id = auth.uid()
     )
   );
-create policy if not exists "users can insert own results" on public.project_results
+drop policy if exists "users can insert own results" on public.project_results;
+create policy "users can insert own results" on public.project_results
   for insert with check (
     exists (
       select 1 from public.projects p
       where p.id = project_id and p.user_id = auth.uid()
     )
+  );
+

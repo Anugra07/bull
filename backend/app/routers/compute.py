@@ -1,11 +1,26 @@
-from fastapi import APIRouter, HTTPException
-from typing import Any
+from fastapi import APIRouter, HTTPException, Query
+from typing import Any, Optional, List
 from app.schemas import ComputeIn, ComputeOut
 from app.deps.supabase_client import get_supabase
 from app.services.gee import analyze_polygon
 from app.services.carbon import compute_carbon
 
 router = APIRouter(prefix="/compute", tags=["compute"])
+
+@router.get("", response_model=List[ComputeOut])
+def get_results(project_id: Optional[str] = Query(None)) -> Any:
+    sb = get_supabase()
+    try:
+        query = sb.table("project_results").select("*")
+        if project_id:
+            query = query.eq("project_id", project_id)
+        # Order by created_at descending
+        query = query.order("created_at", desc=True)
+        res = query.execute()
+        return res.data or []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("", response_model=ComputeOut)
 def compute(payload: ComputeIn) -> Any:
@@ -54,9 +69,11 @@ def compute(payload: ComputeIn) -> Any:
     }
 
     try:
-        res = sb.table("project_results").insert(row).select("*").single().execute()
-        if not res.data:
+        res = sb.table("project_results").insert(row).execute()
+        if not res.data or len(res.data) == 0:
             raise HTTPException(status_code=500, detail="Failed to store results")
-        return res.data
+        # Return the inserted row - convert to ComputeOut format
+        inserted = res.data[0]
+        return inserted
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
