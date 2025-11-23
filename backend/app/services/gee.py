@@ -83,11 +83,13 @@ def analyze_polygon(geojson: Any) -> Dict[str, float]:
     s2_start, s2_end = '2023-01-01', '2024-12-31'
 
     # Sentinel-2 surface reflectance (compute NDVI/EVI means)
-    s2 = ee.ImageCollection('COPERNICUS/S2_SR') \
+    # Select only common spectral bands to avoid band incompatibility issues
+    s2_collection = ee.ImageCollection('COPERNICUS/S2_SR') \
         .filterDate(s2_start, s2_end) \
         .filterBounds(geom) \
         .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
-        .median()
+        .select(['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B11', 'B12'])  # Common spectral bands only
+    s2 = s2_collection.median()
 
     # Scale reflectance for NDVI/EVI (S2 SR bands are in 0-10000)
     nir = s2.select('B8').divide(10000)
@@ -100,8 +102,21 @@ def analyze_polygon(geojson: Any) -> Dict[str, float]:
         { 'NIR': nir, 'RED': red, 'BLUE': blue }
     ).rename('EVI')
 
-    ndvi_mean = ndvi.reduceRegion(ee.Reducer.mean(), geom, scale=30).get('NDVI')
-    evi_mean = evi.reduceRegion(ee.Reducer.mean(), geom, scale=30).get('EVI')
+    # Use bestEffort to handle large regions automatically
+    ndvi_mean = ndvi.reduceRegion(
+        ee.Reducer.mean(), 
+        geom, 
+        scale=30, 
+        maxPixels=1e9,
+        bestEffort=True
+    ).get('NDVI')
+    evi_mean = evi.reduceRegion(
+        ee.Reducer.mean(), 
+        geom, 
+        scale=30, 
+        maxPixels=1e9,
+        bestEffort=True
+    ).get('EVI')
 
     # GEDI canopy height/biomass (datasets availability varies)
     # Using GEDI L2A canopy height as example (meters). Biomass often derived from models; placeholder here.
@@ -109,7 +124,13 @@ def analyze_polygon(geojson: Any) -> Dict[str, float]:
         gedi = ee.ImageCollection('LARSE/GEDI/GEDI02_A_002_MONTHLY') \
             .filterBounds(geom).select(['rh98'])
         canopy_h = gedi.median().rename('canopy_height')
-        canopy_h_mean = canopy_h.reduceRegion(ee.Reducer.mean(), geom, scale=100).get('canopy_height')
+        canopy_h_mean = canopy_h.reduceRegion(
+            ee.Reducer.mean(), 
+            geom, 
+            scale=100, 
+            maxPixels=1e9,
+            bestEffort=True
+        ).get('canopy_height')
     except Exception:
         canopy_h_mean = ee.Number(0)
 
@@ -126,24 +147,48 @@ def analyze_polygon(geojson: Any) -> Dict[str, float]:
     try:
         # OpenLandMap Soil Organic Carbon Content
         soc_image = ee.Image('OpenLandMap/SOL/SOL_ORGANIC-CARBON_USDA-6A1C_M/v02').select('b0')
-        soc_mean = soc_image.reduceRegion(ee.Reducer.mean(), geom, scale=250).get('b0')
+        soc_mean = soc_image.reduceRegion(
+            ee.Reducer.mean(), 
+            geom, 
+            scale=250, 
+            maxPixels=1e9,
+            bestEffort=True
+        ).get('b0')
     except Exception:
         try:
             # Alternative: ISRIC SoilGrids 250m
             soc_image = ee.ImageCollection('projects/soilgrids-isric/clay_mean').first()
-            soc_mean = soc_image.reduceRegion(ee.Reducer.mean(), geom, scale=250).get('b0')
+            soc_mean = soc_image.reduceRegion(
+                ee.Reducer.mean(), 
+                geom, 
+                scale=250, 
+                maxPixels=1e9,
+                bestEffort=True
+            ).get('b0')
         except Exception:
             soc_mean = ee.Number(2.0)  # Default placeholder (2% SOC)
     
     try:
         # OpenLandMap Bulk Density
         bd_image = ee.Image('OpenLandMap/SOL/SOL_BULKDENS-FINEEARTH_USDA-4A1H_M/v02').select('b0')
-        bd_mean = bd_image.reduceRegion(ee.Reducer.mean(), geom, scale=250).get('b0')
+        bd_mean = bd_image.reduceRegion(
+            ee.Reducer.mean(), 
+            geom, 
+            scale=250, 
+            maxPixels=1e9,
+            bestEffort=True
+        ).get('b0')
     except Exception:
         try:
             # Alternative dataset path
             bd_image = ee.ImageCollection('OpenLandMap/SOL/SOL_BULKDENS-FINEEARTH_USDA-4A1H_M/v02').first()
-            bd_mean = bd_image.reduceRegion(ee.Reducer.mean(), geom, scale=250).get('b0')
+            bd_mean = bd_image.reduceRegion(
+                ee.Reducer.mean(), 
+                geom, 
+                scale=250, 
+                maxPixels=1e9,
+                bestEffort=True
+            ).get('b0')
         except Exception:
             bd_mean = ee.Number(1.3)  # Default placeholder (1.3 g/cm3)
 
@@ -151,7 +196,13 @@ def analyze_polygon(geojson: Any) -> Dict[str, float]:
     try:
         chirps = ee.ImageCollection('UCSB-CHG/CHIRPS/DAILY').filterDate('2023-01-01', '2023-12-31').filterBounds(geom)
         rainfall = chirps.sum().rename('rain')
-        rainfall_mean = rainfall.reduceRegion(ee.Reducer.mean(), geom, scale=5000).get('rain')
+        rainfall_mean = rainfall.reduceRegion(
+            ee.Reducer.mean(), 
+            geom, 
+            scale=5000, 
+            maxPixels=1e9,
+            bestEffort=True
+        ).get('rain')
     except Exception:
         rainfall_mean = ee.Number(0)
 
@@ -160,8 +211,20 @@ def analyze_polygon(geojson: Any) -> Dict[str, float]:
         srtm = ee.Image('USGS/SRTMGL1_003')
         elevation = srtm.select('elevation')
         slope = ee.Terrain.slope(elevation)
-        elevation_mean = elevation.reduceRegion(ee.Reducer.mean(), geom, scale=30).get('elevation')
-        slope_mean = slope.reduceRegion(ee.Reducer.mean(), geom, scale=30).get('slope')
+        elevation_mean = elevation.reduceRegion(
+            ee.Reducer.mean(), 
+            geom, 
+            scale=30, 
+            maxPixels=1e9,
+            bestEffort=True
+        ).get('elevation')
+        slope_mean = slope.reduceRegion(
+            ee.Reducer.mean(), 
+            geom, 
+            scale=30, 
+            maxPixels=1e9,
+            bestEffort=True
+        ).get('slope')
     except Exception:
         elevation_mean = ee.Number(0)
         slope_mean = ee.Number(0)
