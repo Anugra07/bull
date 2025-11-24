@@ -42,12 +42,14 @@ def compute(payload: ComputeIn) -> Any:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {e}")
 
-    # Compute carbon figures
-    fire = payload.fire_risk if payload.fire_risk is not None else 0.05
-    drought = payload.drought_risk if payload.drought_risk is not None else 0.03
-    trend = payload.trend_loss if payload.trend_loss is not None else 0.02
-
-    computed, risks = compute_carbon(metrics, area_m2, fire_risk=fire, drought_risk=drought, trend_loss=trend)
+    # Compute carbon figures - ecosystem-specific defaults will be used if not provided
+    computed, risks = compute_carbon(
+        metrics, 
+        area_m2, 
+        fire_risk=payload.fire_risk,
+        drought_risk=payload.drought_risk,
+        trend_loss=payload.trend_loss
+    )
 
     # Build row for project_results
     row = {
@@ -61,12 +63,16 @@ def compute(payload: ComputeIn) -> Any:
         "rainfall": metrics.get("rainfall"),
         "elevation": metrics.get("elevation"),
         "slope": metrics.get("slope"),
+        "land_cover": metrics.get("land_cover"),
         "carbon_biomass": computed["carbon_biomass"],
         "soc_total": computed["soc_total"],
         "annual_co2": computed["annual_co2"],
         "co2_20yr": computed["co2_20yr"],
         "risk_adjusted_co2": computed["risk_adjusted_co2"],
     }
+    # Add ecosystem_type if available (may need database column added)
+    if "ecosystem_type" in computed:
+        row["ecosystem_type"] = computed["ecosystem_type"]
 
     try:
         res = sb.table("project_results").insert(row).execute()

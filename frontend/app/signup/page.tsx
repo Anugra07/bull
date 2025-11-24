@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
@@ -23,7 +23,10 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithOtp({ 
         email, 
-        options: { emailRedirectTo: window.location.origin + "/dashboard" } 
+        options: { 
+          emailRedirectTo: window.location.origin + "/dashboard",
+          shouldCreateUser: true
+        } 
       });
       
       if (error) {
@@ -46,9 +49,9 @@ export default function LoginPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-gray-900 text-white font-semibold text-xl mb-4">
               OG
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Your Account</h1>
             <p className="text-gray-600">
-              Sign in to your Offset Guesser account with a magic link.
+              Get started with Offset Guesser. We'll send you a magic link to sign in.
             </p>
           </div>
 
@@ -70,6 +73,9 @@ export default function LoginPage() {
                         required
                         className="w-full"
                       />
+                      <p className="mt-2 text-sm text-gray-500">
+                        We'll never share your email with anyone.
+                      </p>
                     </div>
 
                     {error && (
@@ -90,9 +96,9 @@ export default function LoginPage() {
 
                   <div className="mt-6 text-center">
                     <p className="text-sm text-gray-600">
-                      Don't have an account?{" "}
-                      <Link href="/signup" className="font-medium text-gray-900">
-                        Sign up for free
+                      Already have an account?{" "}
+                      <Link href="/login" className="font-medium text-gray-900">
+                        Sign in instead
                       </Link>
                     </p>
                   </div>
@@ -110,7 +116,7 @@ export default function LoginPage() {
                   We've sent a magic link to <span className="font-medium text-gray-900">{email}</span>
                 </p>
                 <p className="text-sm text-gray-500 mb-6">
-                  Click the link in the email to sign in to your dashboard.
+                  Click the link in the email to complete your signup and access your dashboard.
                 </p>
                 <button
                   onClick={() => {
@@ -124,6 +130,12 @@ export default function LoginPage() {
               </CardContent>
             )}
           </Card>
+
+          <div className="mt-6 text-center">
+            <p className="text-xs text-gray-500">
+              By continuing, you agree to our Terms of Service and Privacy Policy
+            </p>
+          </div>
         </div>
       </div>
     </div>

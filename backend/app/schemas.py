@@ -42,6 +42,7 @@ class AnalysisOut(BaseModel):
     rainfall: float
     elevation: float
     slope: float
+    land_cover: float  # ESA WorldCover class code
 
 
 class ComputeIn(BaseModel):
@@ -63,6 +64,8 @@ class ComputeOut(BaseModel):
     rainfall: float | None = None
     elevation: float | None = None
     slope: float | None = None
+    land_cover: float | None = None  # ESA WorldCover class code
+    ecosystem_type: str | None = None  # Ecosystem classification: Forest, Cropland, Grassland, etc.
     carbon_biomass: float | None = None
     soc_total: float | None = None
     annual_co2: float | None = None

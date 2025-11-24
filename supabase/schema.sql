@@ -40,6 +40,7 @@ create table if not exists public.project_results (
   rainfall double precision,
   elevation double precision,
   slope double precision,
+  land_cover double precision,
   carbon_biomass double precision,
   soc_total double precision,
   annual_co2 double precision,
