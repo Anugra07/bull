@@ -90,3 +90,18 @@ class ComputeOut(BaseModel):
     rainfall_anomaly_percent: float | None = None
     trend_classification: str | None = None
     baseline_condition: str | None = None  # Overall baseline assessment
+    
+    # BASELINE Carbon Stock (MRV Compliance)
+    baseline_biomass_carbon: float | None = None
+    baseline_soc_total: float | None = None
+    baseline_annual_co2: float | None = None
+    baseline_co2_20yr: float | None = None
+    baseline_scenario: str | None = None
+    
+    # PROJECT Carbon Stock (with intervention)
+    project_annual_co2: float | None = None
+    project_co2_20yr: float | None = None
+    
+    # ADDITIONALITY (Carbon Credits = Project - Baseline)
+    additionality_annual_co2: float | None = None
+    additionality_20yr: float | None = None

@@ -64,6 +64,21 @@ export type ComputeResult = {
   rainfall_anomaly_percent?: number;
   trend_classification?: string;
   baseline_condition?: string;
+
+  // BASELINE Carbon Stock (MRV Compliance)
+  baseline_biomass_carbon?: number;
+  baseline_soc_total?: number;
+  baseline_annual_co2?: number;
+  baseline_co2_20yr?: number;
+  baseline_scenario?: string;
+
+  // PROJECT Carbon Stock (with intervention)
+  project_annual_co2?: number;
+  project_co2_20yr?: number;
+
+  // ADDITIONALITY (Carbon Credits)
+  additionality_annual_co2?: number;
+  additionality_20yr?: number;
 };
 
 export const api = {

@@ -64,15 +64,34 @@ def compute(payload: ComputeIn) -> Any:
         "elevation": metrics.get("elevation"),
         "slope": metrics.get("slope"),
         "land_cover": metrics.get("land_cover"),
+        # Time-series trends
+        "ndvi_trend": metrics.get("ndvi_trend"),
+        "ndvi_trend_interpretation": metrics.get("ndvi_trend_interpretation"),
+        "fire_burn_percent": metrics.get("fire_burn_percent"),
+        "fire_recent_burn": metrics.get("fire_recent_burn"),
+        "rainfall_anomaly_percent": metrics.get("rainfall_anomaly_percent"),
+        "trend_classification": metrics.get("trend_classification"),
+        # Carbon calculations
         "carbon_biomass": computed["carbon_biomass"],
         "soc_total": computed["soc_total"],
         "annual_co2": computed["annual_co2"],
         "co2_20yr": computed["co2_20yr"],
         "risk_adjusted_co2": computed["risk_adjusted_co2"],
+        "ecosystem_type": computed.get("ecosystem_type"),
+        "baseline_condition": computed.get("baseline_condition"),
+        # Baseline Carbon Stock (MRV)
+        "baseline_biomass_carbon": computed.get("baseline_biomass_carbon"),
+        "baseline_soc_total": computed.get("baseline_soc_total"),
+        "baseline_annual_co2": computed.get("baseline_annual_co2"),
+        "baseline_co2_20yr": computed.get("baseline_co2_20yr"),
+        "baseline_scenario": computed.get("baseline_scenario"),
+        # Project Carbon Stock
+        "project_annual_co2": computed.get("project_annual_co2"),
+        "project_co2_20yr": computed.get("project_co2_20yr"),
+        # Additionality (Carbon Credits)
+        "additionality_annual_co2": computed.get("additionality_annual_co2"),
+        "additionality_20yr": computed.get("additionality_20yr"),
     }
-    # Add ecosystem_type if available (may need database column added)
-    if "ecosystem_type" in computed:
-        row["ecosystem_type"] = computed["ecosystem_type"]
 
     try:
         res = sb.table("project_results").insert(row).execute()

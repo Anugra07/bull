@@ -55,6 +55,18 @@ export default function ProjectPage() {
     risk_adjusted_co2?: number;
     ecosystem_type?: string;
     baseline_condition?: string;
+    // Baseline Carbon Stock (MRV)
+    baseline_biomass_carbon?: number;
+    baseline_soc_total?: number;
+    baseline_annual_co2?: number;
+    baseline_co2_20yr?: number;
+    baseline_scenario?: string;
+    // Project Carbon Stock
+    project_annual_co2?: number;
+    project_co2_20yr?: number;
+    // Additionality (Credits)
+    additionality_annual_co2?: number;
+    additionality_20yr?: number;
   }>(null);
 
   useEffect(() => {
@@ -116,6 +128,18 @@ export default function ProjectPage() {
                 risk_adjusted_co2: latestResult.risk_adjusted_co2,
                 ecosystem_type: latestResult.ecosystem_type ?? undefined,
                 baseline_condition: latestResult.baseline_condition ?? undefined,
+                // Baseline Carbon Stock (MRV)
+                baseline_biomass_carbon: latestResult.baseline_biomass_carbon,
+                baseline_soc_total: latestResult.baseline_soc_total,
+                baseline_annual_co2: latestResult.baseline_annual_co2,
+                baseline_co2_20yr: latestResult.baseline_co2_20yr,
+                baseline_scenario: latestResult.baseline_scenario,
+                // Project Carbon Stock
+                project_annual_co2: latestResult.project_annual_co2,
+                project_co2_20yr: latestResult.project_co2_20yr,
+                // Additionality (Credits)
+                additionality_annual_co2: latestResult.additionality_annual_co2,
+                additionality_20yr: latestResult.additionality_20yr,
               });
             }
           }
@@ -427,6 +451,101 @@ export default function ProjectPage() {
                     <div className="text-gray-400 text-sm mt-1">tCO₂e / year</div>
                   </Card>
                 </div>
+              </div>
+            )}
+
+            {/* Carbon Credits (MRV Baseline) */}
+            {compute && compute.baseline_scenario && (
+              <div className="animate-in fade-in slide-in-from-bottom-10 duration-700 delay-150">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">Carbon Credits (MRV Baseline)</h2>
+                  <span className="text-sm text-gray-500 px-3 py-1 bg-gray-100 rounded-full">
+                    Baseline: {compute.baseline_scenario}
+                  </span>
+                </div>
+
+                <Card className="p-6 bg-gradient-to-br from-blue-50 to-green-50 border-blue-200/50">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Headers */}
+                    <div className="text-center">
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Metric</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Baseline (BAU)</div>
+                      <div className="text-xs text-gray-400 mt-1">Without Project</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Project</div>
+                      <div className="text-xs text-gray-400 mt-1">With Intervention</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs font-semibold text-green-600 uppercase tracking-wider">Additionality</div>
+                      <div className="text-xs text-green-500 mt-1">Carbon Credits</div>
+                    </div>
+
+                    {/* Annual CO2 Row */}
+                    <div className="flex items-center">
+                      <div className="text-sm font-medium text-gray-700">Annual CO₂</div>
+                    </div>
+                    <div className="text-center p-3 bg-gray-100/50 rounded-xl">
+                      <div className="text-2xl font-bold text-gray-600">
+                        {(compute.baseline_annual_co2 ?? 0).toFixed(1)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">tCO₂e/yr</div>
+                    </div>
+                    <div className="text-center p-3 bg-green-100/50 rounded-xl border border-green-200/30">
+                      <div className="text-2xl font-bold text-green-700">
+                        {(compute.project_annual_co2 ?? 0).toFixed(1)}
+                      </div>
+                      <div className="text-xs text-green-600 mt-1">tCO₂e/yr</div>
+                    </div>
+                    <div className="text-center p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
+                      <div className="text-2xl font-bold text-white">
+                        +{(compute.additionality_annual_co2 ?? 0).toFixed(1)}
+                      </div>
+                      <div className="text-xs text-green-100 mt-1">tCO₂e/yr</div>
+                    </div>
+
+                    {/* 20-Year Total Row */}
+                    <div className="flex items-center">
+                      <div className="text-sm font-medium text-gray-700">20-Year Total</div>
+                    </div>
+                    <div className="text-center p-3 bg-gray-100/50 rounded-xl">
+                      <div className="text-2xl font-bold text-gray-600">
+                        {(compute.baseline_co2_20yr ?? 0).toFixed(0)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">tCO₂e</div>
+                    </div>
+                    <div className="text-center p-3 bg-green-100/50 rounded-xl border border-green-200/30">
+                      <div className="text-2xl font-bold text-green-700">
+                        {(compute.project_co2_20yr ?? 0).toFixed(0)}
+                      </div>
+                      <div className="text-xs text-green-600 mt-1">tCO₂e</div>
+                    </div>
+                    <div className="text-center p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
+                      <div className="text-3xl font-bold text-white">
+                        +{(compute.additionality_20yr ?? 0).toFixed(0)}
+                      </div>
+                      <div className="text-xs text-green-100 mt-1">tCO₂e</div>
+                    </div>
+                  </div>
+
+                  {/* Explanation */}
+                  <div className="mt-6 p-4 bg-white/60 rounded-xl border border-gray-200/50">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      <div className="text-sm text-gray-600">
+                        <strong className="font-semibold text-gray-900">Additionality</strong> represents carbon sequestration
+                        that <strong>wouldn't occur</strong> without your project. This is calculated by comparing the
+                        <strong className="text-green-600"> project scenario</strong> (with intervention) against the
+                        <strong className="text-gray-700"> baseline scenario</strong> ({compute.baseline_scenario?.toLowerCase()}).
+                        This methodology meets MRV (Monitoring, Reporting, Verification) standards for carbon offset projects.
+                      </div>
+                    </div>
+                  </div>
+                </Card>
               </div>
             )}
           </div>
