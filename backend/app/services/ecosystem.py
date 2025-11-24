@@ -35,54 +35,63 @@ ECOSYSTEM_TYPES = {
 # Ecosystem-specific annual CO2 sequestration rates (tCO2e/ha/yr)
 # Based on IPCC Tier 1 defaults and literature estimates
 # Sources: IPCC Guidelines, regional sequestration studies
+# Ecosystem-specific annual CO2 sequestration rates (tCO2e/ha/yr)
+# Based on IPCC Tier 1 defaults and literature estimates
+# Sources: IPCC Guidelines, regional sequestration studies
 ECOSYSTEM_SEQUESTRATION_RATES = {
-    "Forest": 4.5,  # Tropical/subtropical forests: 3-6 tCO2e/ha/yr
-    "Cropland": 0.5,  # Agricultural soils: 0.2-1.0 tCO2e/ha/yr (conservation agriculture)
-    "Grassland": 0.8,  # Managed grasslands: 0.3-1.5 tCO2e/ha/yr
-    "Wetland": 2.5,  # Wetlands: 1-5 tCO2e/ha/yr (highly variable)
-    "Shrubland": 1.2,  # Shrublands: 0.5-2.0 tCO2e/ha/yr
-    "Plantation": 5.0,  # Managed plantations: 4-7 tCO2e/ha/yr (higher than natural forests)
-    "Degraded": 0.2,  # Degraded land: 0.1-0.5 tCO2e/ha/yr (restoration potential)
-    "Other": 0.0  # No significant sequestration for built-up, snow/ice, etc.
+    "Forest": 8.0,  # Tropical/subtropical forests (User/Research: 6-10)
+    "Mangrove": 10.0,  # Mangroves (User/Research: 8-12)
+    "Cropland": 0.8,  # Agricultural soils (User: 0.5-1)
+    "Grassland": 1.5,  # Managed grasslands (User: 1-2)
+    "Wetland": 4.0,  # Wetlands/Peatlands (User: varies, Research: 2-5+)
+    "Shrubland": 2.0,  # Shrublands (User: 1-3)
+    "Plantation": 6.0,  # Managed plantations
+    "Degraded": 0.3,  # Degraded land
+    "Other": 0.0  # No significant sequestration
 }
 
 # Ecosystem-specific default risk factors
 # Fire risk, drought risk, trend loss vary by ecosystem type
 ECOSYSTEM_DEFAULT_RISKS = {
     "Forest": {
-        "fire_risk": 0.08,  # Higher fire risk in forests
-        "drought_risk": 0.04,  # Moderate drought sensitivity
-        "trend_loss": 0.02  # Deforestation/degradation trend
+        "fire_risk": 0.08,
+        "drought_risk": 0.04,
+        "trend_loss": 0.02
+    },
+    "Mangrove": {
+        "fire_risk": 0.01,  # Very low fire risk
+        "drought_risk": 0.05,  # Moderate salinity/drought risk
+        "trend_loss": 0.03  # Coastal development/erosion
     },
     "Cropland": {
-        "fire_risk": 0.02,  # Lower fire risk
-        "drought_risk": 0.06,  # Higher drought risk (agricultural dependency)
-        "trend_loss": 0.03  # Land conversion/erosion
+        "fire_risk": 0.02,
+        "drought_risk": 0.06,
+        "trend_loss": 0.03
     },
     "Grassland": {
-        "fire_risk": 0.05,  # Moderate fire risk
-        "drought_risk": 0.05,  # Moderate drought sensitivity
-        "trend_loss": 0.02  # Overgrazing/land conversion
+        "fire_risk": 0.05,
+        "drought_risk": 0.05,
+        "trend_loss": 0.02
     },
     "Wetland": {
-        "fire_risk": 0.01,  # Very low fire risk
-        "drought_risk": 0.08,  # High drought risk (water dependency)
-        "trend_loss": 0.04  # Drainage/drying trends
+        "fire_risk": 0.01,
+        "drought_risk": 0.08,
+        "trend_loss": 0.04
     },
     "Shrubland": {
-        "fire_risk": 0.06,  # Moderate-high fire risk
-        "drought_risk": 0.05,  # Moderate drought tolerance
-        "trend_loss": 0.02  # Degradation/desertification
+        "fire_risk": 0.06,
+        "drought_risk": 0.05,
+        "trend_loss": 0.02
     },
     "Plantation": {
-        "fire_risk": 0.07,  # Higher fire risk (managed, uniform)
-        "drought_risk": 0.03,  # Lower drought risk (often irrigated/selected species)
-        "trend_loss": 0.01  # Lower trend loss (managed systems)
+        "fire_risk": 0.07,
+        "drought_risk": 0.03,
+        "trend_loss": 0.01
     },
     "Degraded": {
-        "fire_risk": 0.03,  # Low fire risk (sparse vegetation)
-        "drought_risk": 0.07,  # High drought sensitivity
-        "trend_loss": 0.05  # High degradation trend
+        "fire_risk": 0.03,
+        "drought_risk": 0.07,
+        "trend_loss": 0.05
     },
     "Other": {
         "fire_risk": 0.01,
@@ -100,15 +109,14 @@ def classify_ecosystem(land_cover_class: int) -> str:
         land_cover_class: ESA WorldCover class code (10, 20, 30, etc.)
     
     Returns:
-        Ecosystem type string: "Forest", "Cropland", "Grassland", "Wetland", 
+        Ecosystem type string: "Forest", "Mangrove", "Cropland", "Grassland", "Wetland", 
                                "Shrubland", "Plantation", "Degraded", or "Other"
     """
     for ecosystem_type, classes in ECOSYSTEM_TYPES.items():
         if land_cover_class in classes:
-            # Special handling: Mangroves (95) could be both Forest and Wetland
-            # Prioritize Wetland for mangroves
+            # Special handling: Mangroves (95)
             if land_cover_class == 95:
-                return "Wetland"
+                return "Mangrove"
             if ecosystem_type != "Other":  # Don't return "Other" unless no match
                 return ecosystem_type
     
