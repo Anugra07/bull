@@ -45,6 +45,13 @@ class AnalysisOut(BaseModel):
     elevation: float
     slope: float
     land_cover: float  # ESA WorldCover class code
+    # Time-series trends (2020-2024, 5 years)
+    ndvi_trend: float
+    ndvi_trend_interpretation: str
+    fire_burn_percent: float
+    fire_recent_burn: bool
+    rainfall_anomaly_percent: float
+    trend_classification: str
 
 
 class ComputeIn(BaseModel):
@@ -75,3 +82,11 @@ class ComputeOut(BaseModel):
     annual_co2: float | None = None
     co2_20yr: float | None = None
     risk_adjusted_co2: float | None = None
+    # Time-series trends
+    ndvi_trend: float | None = None
+    ndvi_trend_interpretation: str | None = None
+    fire_burn_percent: float | None = None
+    fire_recent_burn: bool | None = None
+    rainfall_anomaly_percent: float | None = None
+    trend_classification: str | None = None
+    baseline_condition: str | None = None  # Overall baseline assessment

@@ -64,8 +64,49 @@ def compute_carbon(
     co2_20yr = annual_co2 * 20.0
 
     # Risk adjustment using ecosystem-specific risk factors
+    # ENHANCED: Adjust risks based on time-series trend data if available
+    ndvi_trend = float(metrics.get("ndvi_trend", 0.0))
+    fire_burn_percent = float(metrics.get("fire_burn_percent", 0.0))
+    fire_recent_burn = bool(metrics.get("fire_recent_burn", False))
+    rainfall_anomaly_percent = float(metrics.get("rainfall_anomaly_percent", 0.0))
+    
+    # Adjust fire risk based on historical data
+    if fire_recent_burn:
+        fire_risk = min(fire_risk + 0.05, 0.95)  # Increase by 5% if recent burn
+    if fire_burn_percent > 10:
+        fire_risk = min(fire_risk + 0.03, 0.95)  # Increase by 3% if >10% burned
+    
+    # Adjust drought risk based on rainfall anomaly
+    if rainfall_anomaly_percent < -20:
+        drought_risk = min(drought_risk + 0.04, 0.95)  # Increase by 4% if severe drought
+    
+    # Adjust trend loss based on NDVI trend
+    if ndvi_trend < -0.02:  # Degrading trend
+        trend_loss = min(trend_loss + 0.03, 0.95)  # Increase by 3%
+    elif ndvi_trend > 0.02:  # Improving trend
+        trend_loss = max(trend_loss - 0.02, 0.0)  # Decrease by 2%
+    
+    # Calculate overall adjustment factor
     adj_factor = max(0.0, 1.0 - fire_risk - drought_risk - trend_loss)
     risk_adjusted_co2 = co2_20yr * adj_factor
+    
+    # Determine baseline condition
+    baseline_condition = "Unknown"
+    trend_class = str(metrics.get("trend_classification", "Unknown"))
+    
+    if trend_class in ["Degrading", "Fire-Impacted", "Drought-Stressed"]:
+        baseline_condition = "Degraded"
+    elif trend_class == "Stable":
+        if biomass > 150 and soc_tC_per_ha > 50:
+            baseline_condition = "Excellent"
+        elif biomass > 75:
+            baseline_condition = "Good"
+        else:
+            baseline_condition = "Stable"
+    elif "Improving" in trend_class or "Regenerating" in trend_class:
+        baseline_condition = "Improving"
+    elif "Recovering" in trend_class:
+        baseline_condition = "Recovering"
 
     return (
         {
@@ -75,6 +116,7 @@ def compute_carbon(
             "co2_20yr": co2_20yr,      # tCO2e over 20 years
             "risk_adjusted_co2": risk_adjusted_co2,
             "ecosystem_type": ecosystem_type,  # Ecosystem classification
+            "baseline_condition": baseline_condition,  # Overall baseline assessment
         },
         {
             "fire_risk": fire_risk,

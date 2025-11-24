@@ -28,6 +28,13 @@ export type AnalysisResult = {
   rainfall: number;
   elevation: number;
   slope: number;
+  // Time-series trends
+  ndvi_trend: number;
+  ndvi_trend_interpretation: string;
+  fire_burn_percent: number;
+  fire_recent_burn: boolean;
+  rainfall_anomaly_percent: number;
+  trend_classification: string;
 };
 
 export type ComputeResult = {
@@ -42,11 +49,21 @@ export type ComputeResult = {
   rainfall?: number;
   elevation?: number;
   slope?: number;
+  land_cover?: number;
   carbon_biomass?: number;
   soc_total?: number;
   annual_co2?: number;
   co2_20yr?: number;
   risk_adjusted_co2?: number;
+  ecosystem_type?: string;
+  // Time-series trends
+  ndvi_trend?: number;
+  ndvi_trend_interpretation?: string;
+  fire_burn_percent?: number;
+  fire_recent_burn?: boolean;
+  rainfall_anomaly_percent?: number;
+  trend_classification?: string;
+  baseline_condition?: string;
 };
 
 export const api = {

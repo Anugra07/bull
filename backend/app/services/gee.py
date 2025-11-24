@@ -431,6 +431,193 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         metrics_dict['elevation'] = ee.Number(0)
         metrics_dict['slope'] = ee.Number(0)
     
+    
+    # TIME-SERIES TRENDS ANALYSIS (2020-2024, 5 years)
+    # This detects degradation, improvement, fire impacts, and rainfall anomalies
+    
+    ndvi_trend = 0.0
+    ndvi_trend_interpretation = "Unknown"
+    fire_burn_percent = 0.0
+    fire_recent_burn = False
+    rainfall_anomaly_percent = 0.0
+    trend_classification = "Unknown"
+    
+    try:
+        # 1. NDVI TREND ANALYSIS (5-year linear trend)
+        # Calculate yearly NDVI means from 2020-2024 and compute slope
+        years = [2020, 2021, 2022, 2023, 2024]
+        ndvi_yearly = []
+        
+        for year in years:
+            try:
+                s2_year = ee.ImageCollection('COPERNICUS/S2_SR') \
+                    .filterDate(f'{year}-01-01', f'{year}-12-31') \
+                    .filterBounds(geom) \
+                    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
+                    .select(['B4', 'B8'])
+                
+                # Check if we have data for this year
+                count = s2_year.size().getInfo()
+                if count > 0:
+                    s2_median = s2_year.median()
+                    nir_y = s2_median.select('B8').divide(10000)
+                    red_y = s2_median.select('B4').divide(10000)
+                    ndvi_y = nir_y.subtract(red_y).divide(nir_y.add(red_y))
+                    
+                    ndvi_mean_y = ndvi_y.reduceRegion(
+                        ee.Reducer.mean(),
+                        geom,
+                        scale=30,
+                        maxPixels=1e9,
+                        bestEffort=True
+                    ).getInfo()
+                    
+                    ndvi_val = float(ndvi_mean_y.get('B8') or 0.0)
+                    ndvi_yearly.append(ndvi_val)
+                else:
+                    ndvi_yearly.append(None)
+            except Exception:
+                ndvi_yearly.append(None)
+        
+        # Filter out None values and calculate trend if we have at least 3 data points
+        valid_ndvi = [(i, v) for i, v in enumerate(ndvi_yearly) if v is not None]
+        
+        if len(valid_ndvi) >= 3:
+            # Calculate linear regression slope manually
+            n = len(valid_ndvi)
+            sum_x = sum(i for i, _ in valid_ndvi)
+            sum_y = sum(v for _, v in valid_ndvi)
+            sum_xy = sum(i * v for i, v in valid_ndvi)
+            sum_x2 = sum(i * i for i, _ in valid_ndvi)
+            
+            # Slope = (n*sum_xy - sum_x*sum_y) / (n*sum_x2 - sum_x^2)
+            denominator = n * sum_x2 - sum_x * sum_x
+            if denominator != 0:
+                ndvi_trend = (n * sum_xy - sum_x * sum_y) / denominator
+                
+                # Interpret trend
+                if ndvi_trend < -0.02:
+                    ndvi_trend_interpretation = "Degrading"
+                elif ndvi_trend > 0.02:
+                    ndvi_trend_interpretation = "Improving"
+                else:
+                    ndvi_trend_interpretation = "Stable"
+    
+    except Exception as e:
+        print(f"NDVI Trend Error: {e}")
+    
+    try:
+        # 2. FIRE BURN SCARS DETECTION (MODIS MCD64A1)
+        # Detect burned areas in the last 5 years
+        fire_start = '2020-01-01'
+        fire_end = '2024-12-31'
+        
+        fire_collection = ee.ImageCollection('MODIS/006/MCD64A1') \
+            .filterDate(fire_start, fire_end) \
+            .filterBounds(geom) \
+            .select('BurnDate')
+        
+        # BurnDate: day of year (1-366) when burned, 0 = not burned
+        # Create a mask where any pixel was burned (BurnDate > 0)
+        burned_mask = fire_collection.max().gt(0)
+        
+        # Calculate burned area percentage
+        area_image = ee.Image.pixelArea()
+        burned_area = area_image.updateMask(burned_mask).reduceRegion(
+            ee.Reducer.sum(),
+            geom,
+            scale=500,
+            maxPixels=1e9,
+            bestEffort=True
+        ).getInfo()
+        
+        total_area = area_image.reduceRegion(
+            ee.Reducer.sum(),
+            geom,
+            scale=500,
+            maxPixels=1e9,
+            bestEffort=True
+        ).getInfo()
+        
+        burned_area_m2 = float(burned_area.get('area') or 0.0)
+        total_area_m2 = float(total_area.get('area') or 1.0)
+        
+        if total_area_m2 > 0:
+            fire_burn_percent = (burned_area_m2 / total_area_m2) * 100.0
+        
+        # Check for recent burns (last 2 years)
+        recent_fire = ee.ImageCollection('MODIS/006/MCD64A1') \
+            .filterDate('2023-01-01', '2024-12-31') \
+            .filterBounds(geom) \
+            .select('BurnDate')
+        
+        recent_burned = recent_fire.max().reduceRegion(
+            ee.Reducer.max(),
+            geom,
+            scale=500,
+            maxPixels=1e9,
+            bestEffort=True
+        ).getInfo()
+        
+        recent_burn_val = float(recent_burned.get('BurnDate') or 0.0)
+        fire_recent_burn = recent_burn_val > 0
+        
+    except Exception as e:
+        print(f"Fire Detection Error: {e}")
+    
+    try:
+        # 3. RAINFALL ANOMALY (CHIRPS)
+        # Compare recent 5-year mean (2020-2024) with long-term mean (2000-2024)
+        
+        # Recent period (5 years)
+        chirps_recent = ee.ImageCollection('UCSB-CHG/CHIRPS/DAILY') \
+            .filterDate('2020-01-01', '2024-12-31') \
+            .filterBounds(geom)
+        rainfall_recent = chirps_recent.sum().reduceRegion(
+            ee.Reducer.mean(),
+            geom,
+            scale=5000,
+            maxPixels=1e9,
+            bestEffort=True
+        ).getInfo()
+        recent_mean = float(rainfall_recent.get('precipitation') or 0.0) / 5.0  # Annual average
+        
+        # Long-term period (25 years)
+        chirps_longterm = ee.ImageCollection('UCSB-CHG/CHIRPS/DAILY') \
+            .filterDate('2000-01-01', '2024-12-31') \
+            .filterBounds(geom)
+        rainfall_longterm = chirps_longterm.sum().reduceRegion(
+            ee.Reducer.mean(),
+            geom,
+            scale=5000,
+            maxPixels=1e9,
+            bestEffort=True
+        ).getInfo()
+        longterm_mean = float(rainfall_longterm.get('precipitation') or 0.0) / 25.0  # Annual average
+        
+        # Calculate anomaly percentage
+        if longterm_mean > 0:
+            rainfall_anomaly_percent = ((recent_mean - longterm_mean) / longterm_mean) * 100.0
+        
+    except Exception as e:
+        print(f"Rainfall Anomaly Error: {e}")
+    
+    # 4. TREND CLASSIFICATION
+    # Combine all indicators to classify overall trend
+    if ndvi_trend < -0.02:
+        trend_classification = "Degrading"
+    elif fire_burn_percent > 10:
+        trend_classification = "Fire-Impacted"
+    elif rainfall_anomaly_percent < -20:
+        trend_classification = "Drought-Stressed"
+    elif ndvi_trend > 0.02:
+        if fire_burn_percent < 5:
+            trend_classification = "Improving/Regenerating"
+        else:
+            trend_classification = "Recovering"
+    else:
+        trend_classification = "Stable"
+    
     # Evaluate all Earth Engine expressions to Python at once
     result = ee.Dictionary(metrics_dict).getInfo()
     
@@ -446,5 +633,12 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         'elevation': float(result.get('elevation') or 0.0),
         'slope': float(result.get('slope') or 0.0),
         'land_cover': float(land_cover_class_python),  # Use Python value directly
+        # Time-series trends
+        'ndvi_trend': float(ndvi_trend),
+        'ndvi_trend_interpretation': ndvi_trend_interpretation,
+        'fire_burn_percent': float(fire_burn_percent),
+        'fire_recent_burn': bool(fire_recent_burn),
+        'rainfall_anomaly_percent': float(rainfall_anomaly_percent),
+        'trend_classification': trend_classification,
     }
 

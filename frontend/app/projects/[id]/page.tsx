@@ -31,6 +31,13 @@ export default function ProjectPage() {
     elevation: number;
     slope: number;
     land_cover?: number;
+    // Time-series trends
+    ndvi_trend: number;
+    ndvi_trend_interpretation: string;
+    fire_burn_percent: number;
+    fire_recent_burn: boolean;
+    rainfall_anomaly_percent: number;
+    trend_classification: string;
   }>(null);
 
   // Helpers to scale values into 0-100% widths for preview bars
@@ -47,6 +54,7 @@ export default function ProjectPage() {
     co2_20yr?: number;
     risk_adjusted_co2?: number;
     ecosystem_type?: string;
+    baseline_condition?: string;
   }>(null);
 
   useEffect(() => {
@@ -89,7 +97,14 @@ export default function ProjectPage() {
                   rainfall: latestResult.rainfall ?? 0,
                   elevation: latestResult.elevation ?? 0,
                   slope: latestResult.slope ?? 0,
-                  land_cover: (latestResult as any).land_cover ?? undefined,
+                  land_cover: latestResult.land_cover ?? undefined,
+                  // Time-series trends
+                  ndvi_trend: latestResult.ndvi_trend ?? 0,
+                  ndvi_trend_interpretation: latestResult.ndvi_trend_interpretation ?? 'Unknown',
+                  fire_burn_percent: latestResult.fire_burn_percent ?? 0,
+                  fire_recent_burn: latestResult.fire_recent_burn ?? false,
+                  rainfall_anomaly_percent: latestResult.rainfall_anomaly_percent ?? 0,
+                  trend_classification: latestResult.trend_classification ?? 'Unknown',
                 });
               }
               // Set compute results
@@ -99,7 +114,8 @@ export default function ProjectPage() {
                 annual_co2: latestResult.annual_co2,
                 co2_20yr: latestResult.co2_20yr,
                 risk_adjusted_co2: latestResult.risk_adjusted_co2,
-                ecosystem_type: (latestResult as any).ecosystem_type ?? undefined,
+                ecosystem_type: latestResult.ecosystem_type ?? undefined,
+                baseline_condition: latestResult.baseline_condition ?? undefined,
               });
             }
           }
@@ -281,7 +297,104 @@ export default function ProjectPage() {
               </div>
             )}
 
-            {/* Carbon Estimates */}
+            {/* Trends & Risk Indicators (Time-Series Analysis) */}
+            {metrics && (
+              <div className="animate-in fade-in slide-in-from-bottom-6 duration-700 delay-75">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">Trends &amp; Risk Indicators</h2>
+                  <span className="text-sm text-gray-500">5-year analysis (2020-2024)</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* NDVI Trend */}
+                  <Card className="p-6 bg-gradient-to-br from-white to-gray-50/50">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">NDVI Trend</h3>
+                        <p className="text-xs text-gray-500">Vegetation change over time</p>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-semibold ${metrics.ndvi_trend_interpretation === 'Degrading' ? 'bg-red-100 text-red-700' :
+                        metrics.ndvi_trend_interpretation === 'Improving' ? 'bg-green-100 text-green-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                        {metrics.ndvi_trend_interpretation === 'Degrading' ? '↓ Degrading' :
+                          metrics.ndvi_trend_interpretation === 'Improving' ? '↑ Improving' :
+                            '→ Stable'}
+                      </div>
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                      {metrics.ndvi_trend.toFixed(4)}
+                    </div>
+                    <div className="text-sm text-gray-500">units/year</div>
+                  </Card>
+
+                  {/* Fire History */}
+                  <Card className="p-6 bg-gradient-to-br from-white to-gray-50/50">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Fire History</h3>
+                        <p className="text-xs text-gray-500">Burned area detection</p>
+                      </div>
+                      {metrics.fire_recent_burn && (
+                        <div className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                          Recent Burn
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                      {metrics.fire_burn_percent.toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-gray-500">of area burned (5 years)</div>
+                  </Card>
+
+                  {/* Rainfall Anomaly */}
+                  <Card className="p-6 bg-gradient-to-br from-white to-gray-50/50">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Rainfall Pattern</h3>
+                        <p className="text-xs text-gray-500">vs. long-term average</p>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-semibold ${metrics.rainfall_anomaly_percent < -20 ? 'bg-amber-100 text-amber-700' :
+                        metrics.rainfall_anomaly_percent > 20 ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                        {metrics.rainfall_anomaly_percent < -20 ? 'Drought' :
+                          metrics.rainfall_anomaly_percent > 20 ? 'Wet' :
+                            'Normal'}
+                      </div>
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                      {metrics.rainfall_anomaly_percent > 0 ? '+' : ''}{metrics.rainfall_anomaly_percent.toFixed(1)}%
+                    </div>
+                    <div className="text-sm text-gray-500">anomaly from baseline</div>
+                  </Card>
+
+                  {/* Overall Trend Classification */}
+                  <Card className="p-6 bg-gradient-to-br from-white to-gray-50/50">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Overall Trend</h3>
+                        <p className="text-xs text-gray-500">Combined assessment</p>
+                      </div>
+                    </div>
+                    <div className={`inline-block px-4 py-2 rounded-xl text-xl font-bold mb-2 ${metrics.trend_classification.includes('Degrading') || metrics.trend_classification.includes('Fire-Impacted') || metrics.trend_classification.includes('Drought')
+                      ? 'bg-red-100 text-red-700' :
+                      metrics.trend_classification.includes('Improving') || metrics.trend_classification.includes('Regenerating')
+                        ? 'bg-green-100 text-green-700' :
+                        metrics.trend_classification.includes('Recovering')
+                          ? 'bg-blue-100 text-blue-700' :
+                          'bg-gray-100 text-gray-700'
+                      }`}>
+                      {metrics.trend_classification}
+                    </div>
+                    <div className="text-sm text-gray-500">Based on multi-indicator analysis</div>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/*Carbon Estimates */}
             {compute && (
               <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6">Carbon Offset Potential</h2>
