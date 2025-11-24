@@ -196,7 +196,20 @@ export default function ProjectPage() {
           annual_co2: c.annual_co2,
           co2_20yr: c.co2_20yr,
           risk_adjusted_co2: c.risk_adjusted_co2,
-          ecosystem_type: (c as any).ecosystem_type ?? undefined,
+          ecosystem_type: c.ecosystem_type ?? undefined,
+          baseline_condition: c.baseline_condition ?? undefined,
+          // Baseline Carbon Stock (MRV)
+          baseline_biomass_carbon: c.baseline_biomass_carbon,
+          baseline_soc_total: c.baseline_soc_total,
+          baseline_annual_co2: c.baseline_annual_co2,
+          baseline_co2_20yr: c.baseline_co2_20yr,
+          baseline_scenario: c.baseline_scenario,
+          // Project Carbon Stock
+          project_annual_co2: c.project_annual_co2,
+          project_co2_20yr: c.project_co2_20yr,
+          // Additionality (Credits)
+          additionality_annual_co2: c.additionality_annual_co2,
+          additionality_20yr: c.additionality_20yr,
         });
       } catch (e: any) {
         alert(`Compute error: ${e.message || e}`);

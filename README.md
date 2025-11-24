@@ -1,67 +1,102 @@
-# Carbon Offset Land Analyzer – Monorepo (Phase 1 MVP)
+# Bull - Carbon Offset Land Analyzer
 
-This monorepo contains:
+## Quick Start
 
-- frontend/ — Next.js 14 (App Router), React, Leaflet, TailwindCSS
-- backend/ — FastAPI (Python), Geospatial + Earth Engine integrations
-- supabase/ — SQL schema for tables
+### Running the Application
 
-## Tech Stack
+Simply run the startup script:
 
-Frontend: Next.js 14, React, Leaflet.js, OpenStreetMap tiles, TailwindCSS
-Backend: FastAPI (Python), earthengine-api, geopandas, rasterio, shapely, numpy, scikit-image, reportlab
-Auth/DB: Supabase Auth, Supabase Postgres
-
-## Getting Started
-
-1) Copy envs
-
-- Root
-  - cp .env.example .env
-- Frontend
-  - cd frontend && cp .env.local.example .env.local
-- Backend
-  - cd backend && cp .env.example .env
-
-2) Install & run
-
-- Frontend
-  - pnpm i (or npm i / yarn)
-  - pnpm dev
-- Backend
-  - python -m venv .venv && source .venv/bin/activate
-  - pip install -r requirements.txt
-  - uvicorn app.main:app --reload --port 8000
-
-## Supabase
-
-- Create a Supabase project (free tier)
-- Set the variables from your project into .env files
-- Apply schema from supabase/schema.sql
-
-## Structure
-
-```
-frontend/
-  app/
-  src/
-  styles/
-backend/
-  app/
-  requirements.txt
-supabase/
-  schema.sql
+```bash
+./start.sh
 ```
 
-## Phase 1 Tasks
+This will start both the backend and frontend servers automatically.
 
-- Task 1: Project setup (this commit)
-- Task 2: Frontend UI pages + auth wiring
-- Task 3: Polygon validation + storage
-- Task 4: Earth Engine integrations
-- Task 5: Carbon computations
-- Task 6: Dashboard visuals
-- Task 7: PDF report
+**URLs:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
 
-## License
-MIT
+**To stop both servers:** Press `Ctrl+C` in the terminal
+
+---
+
+## Manual Setup (if needed)
+
+### Backend Setup
+
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+### Frontend Setup
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+## Environment Variables
+
+Create a `.env` file in the `backend` directory with:
+
+```env
+# Google Earth Engine
+GEE_SERVICE_ACCOUNT=your-service-account@your-project.iam.gserviceaccount.com
+GEE_PRIVATE_KEY={"type":"service_account",...}
+
+# Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+```
+
+Create a `.env.local` file in the `frontend` directory with:
+
+```env
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+---
+
+## Features
+
+- ✅ **Environmental Metrics**: NDVI, EVI, Biomass, Canopy Height, SOC, Rainfall
+- ✅ **Time-Series Trends**: 5-year NDVI trends, fire detection, rainfall anomalies
+- ✅ **Carbon Offset Potential**: Ecosystem-specific sequestration calculations
+- ✅ **MRV Baseline**: Baseline vs. Project carbon stock with additionality (carbon credits)
+- ✅ **Risk Assessment**: Fire risk, drought risk, trend loss adjustments
+
+---
+
+## Technology Stack
+
+**Frontend:**
+- Next.js
+- React
+- Tailwind CSS
+- TypeScript
+
+**Backend:**
+- FastAPI (Python)
+- Google Earth Engine
+- Supabase
+- GeoPandas, Shapely, Rasterio
+
+---
+
+## Documentation
+
+See `PARAMETERS_DOCUMENTATION.md` for detailed information about:
+- Data sources
+- Carbon calculation methodology
+- Time-series analysis
+- MRV baseline scenarios
