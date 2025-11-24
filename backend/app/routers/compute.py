@@ -38,7 +38,7 @@ def compute(payload: ComputeIn) -> Any:
 
     # Analyze metrics via GEE
     try:
-        metrics = analyze_polygon(geometry)
+        metrics = analyze_polygon(geometry, soil_depth=payload.soil_depth)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {e}")
 

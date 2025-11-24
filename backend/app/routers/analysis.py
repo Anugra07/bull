@@ -25,7 +25,7 @@ def run_analysis(payload: AnalysisIn) -> Any:
         raise HTTPException(status_code=422, detail="Provide either polygon_id or geometry")
 
     try:
-        metrics = analyze_polygon(geometry)
+        metrics = analyze_polygon(geometry, soil_depth=payload.soil_depth)
         return metrics
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

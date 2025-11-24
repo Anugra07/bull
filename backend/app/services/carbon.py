@@ -8,7 +8,6 @@ IPCC_TIER1_DEFAULT_TCO2_HA_YR = 3.0
 def compute_carbon(
     metrics: Dict[str, float],
     area_m2: float,
-    soil_depth_m: float = 0.30,
     fire_risk: Optional[float] = None,
     drought_risk: Optional[float] = None,
     trend_loss: Optional[float] = None,
@@ -52,11 +51,12 @@ def compute_carbon(
     carbon_biomass_tc = biomass * 0.47  # tC/ha
 
     # SOC total across polygon
-    # Interpret bulk density as g/cm3 and convert to kg/m3
-    bulk_density_kg_m3 = bulk_density_raw * 1000.0
-    soc_fraction = soc_pct / 100.0
-    soc_kgC = soc_fraction * bulk_density_kg_m3 * soil_depth_m * area_m2
-    soc_tC = soc_kgC / 1000.0
+    # Pre-calculated in GEE analysis based on selected depth
+    soc_tC_per_ha = float(metrics.get("soc", 0.0))
+    
+    # Convert per-ha to total for the area
+    area_ha = area_m2 / 10000.0
+    soc_tC = soc_tC_per_ha * area_ha
 
     # Annual CO2 sequestration (tCO2e) - ecosystem-specific rate
     area_ha = area_m2 / 10000.0

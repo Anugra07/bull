@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 
 class ProjectCreate(BaseModel):
     user_id: str
@@ -31,13 +31,15 @@ class PolygonOutWithGeometry(PolygonOut):
 class AnalysisIn(BaseModel):
     polygon_id: Optional[str] = None
     geometry: Optional[Any] = None  # GeoJSON geometry or Feature
+    soil_depth: str = "0-30cm"  # "0-30cm", "0-100cm", "0-200cm"
 
 class AnalysisOut(BaseModel):
     ndvi: float
     evi: float
     biomass: float
     canopy_height: float
-    soc: float
+    soc: float  # Total SOC in tC/ha for the selected depth
+    soc_details: Optional[Dict[str, Any]] = None  # Detailed SOC info
     bulk_density: float
     rainfall: float
     elevation: float
@@ -51,6 +53,7 @@ class ComputeIn(BaseModel):
     fire_risk: float | None = None
     drought_risk: float | None = None
     trend_loss: float | None = None
+    soil_depth: str = "0-30cm"  # "0-30cm", "0-100cm", "0-200cm"
 
 class ComputeOut(BaseModel):
     id: str
@@ -60,6 +63,7 @@ class ComputeOut(BaseModel):
     biomass: float | None = None
     canopy_height: float | None = None
     soc: float | None = None
+    soc_details: Optional[Dict[str, Any]] = None
     bulk_density: float | None = None
     rainfall: float | None = None
     elevation: float | None = None

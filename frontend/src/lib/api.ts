@@ -66,20 +66,20 @@ export const api = {
     http<PolygonWithGeometry>(`/polygons/${encodeURIComponent(polygon_id)}`),
 
   listPolygons: (project_id?: string) => {
-    const url = project_id 
+    const url = project_id
       ? `/polygons?project_id=${encodeURIComponent(project_id)}`
       : `/polygons`;
     return http<PolygonWithGeometry[]>(url);
   },
 
-  analyze: (payload: { polygon_id?: string; geometry?: any }) =>
+  analyze: (payload: { polygon_id?: string; geometry?: any; soil_depth?: string }) =>
     http<AnalysisResult>(`/analysis`, { method: "POST", body: JSON.stringify(payload) }),
 
-  compute: (payload: { project_id: string; polygon_id: string; fire_risk?: number; drought_risk?: number; trend_loss?: number }) =>
+  compute: (payload: { project_id: string; polygon_id: string; fire_risk?: number; drought_risk?: number; trend_loss?: number; soil_depth?: string }) =>
     http<ComputeResult>(`/compute`, { method: "POST", body: JSON.stringify(payload) }),
 
   getResults: (project_id?: string) => {
-    const url = project_id 
+    const url = project_id
       ? `/compute?project_id=${encodeURIComponent(project_id)}`
       : `/compute`;
     return http<ComputeResult[]>(url);

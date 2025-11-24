@@ -4,5 +4,12 @@
 
 html, body, #__next { height: 100%; }
 
+body {
+  color: rgb(var(--foreground-rgb));
+  background: #F5F5F7;
+  font-feature-settings: "cv02", "cv03", "cv04";
+  -webkit-font-smoothing: antialiased;
+}
+
 /* Leaflet styles */
 .leaflet-container { height: 100%; width: 100%; }

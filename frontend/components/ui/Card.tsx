@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { HTMLAttributes } from "react";
 
 export function Card({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={clsx("rounded-2xl border border-gray-200/60 bg-white", className)} {...rest} />;
+  return <div className={clsx("rounded-2xl bg-white shadow-sm border border-gray-100/50", className)} {...rest} />;
 }
 
 export function CardHeader({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
