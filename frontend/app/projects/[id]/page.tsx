@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import dynamic from "next/dynamic";
 import FileUpload from "@/components/FileUpload";
-import { ArrowLeft, Activity, Loader2 } from "lucide-react";
+import { ArrowLeft, Activity, Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -279,6 +279,11 @@ export default function ProjectPage() {
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Analyzing...
+                </>
+              ) : metrics ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Re-run Analysis
                 </>
               ) : (
                 <>
