@@ -74,31 +74,10 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F7] font-sans text-gray-900">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-[#F5F5F7]/80 backdrop-blur-md border-b border-gray-200/50">
-        <div className="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-gray-900/20">
-              <FolderOpen className="w-5 h-5" />
-            </div>
-            <h1 className="text-xl font-bold tracking-tight">My Projects</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500 hidden sm:inline-block">{user?.email}</span>
-            <button
-              onClick={handleSignOut}
-              className="p-2 text-gray-400 hover:text-gray-900 transition-colors"
-              title="Sign Out"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-5xl mx-auto px-6 py-12">
         {/* Actions */}
-        <div className="flex justify-end mb-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-bold tracking-tight">My Projects</h1>
           <Button onClick={handleCreate} className="shadow-lg shadow-gray-900/20 pl-4 pr-5">
             <Plus className="w-5 h-5 mr-2" />
             New Project

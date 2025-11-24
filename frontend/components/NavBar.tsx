@@ -50,15 +50,23 @@ export default function NavBar() {
             </Link>
             {email && (
               <div className="hidden md:flex items-center gap-1">
-                <Link 
-                  href="/dashboard" 
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                    isActive("/dashboard") 
-                      ? "bg-gray-100 text-gray-900" 
-                      : "text-gray-600"
-                  }`}
+                <Link
+                  href="/dashboard"
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${isActive("/dashboard")
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
                 >
                   Dashboard
+                </Link>
+                <Link
+                  href="/guide"
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${isActive("/guide")
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
+                >
+                  Methodology
                 </Link>
               </div>
             )}
@@ -69,8 +77,8 @@ export default function NavBar() {
                 <div className="hidden sm:flex items-center gap-2 text-sm text-gray-600">
                   <span className="max-w-[150px] truncate">{email}</span>
                 </div>
-                <button 
-                  onClick={logout} 
+                <button
+                  onClick={logout}
                   className="px-4 py-2 rounded-xl bg-gray-100 text-gray-900 text-sm font-medium active:opacity-70"
                 >
                   Logout
@@ -78,14 +86,14 @@ export default function NavBar() {
               </>
             ) : (
               <div className="flex items-center gap-3">
-                <Link 
-                  href="/login" 
+                <Link
+                  href="/login"
                   className="px-4 py-2 rounded-xl text-gray-900 text-sm font-medium active:opacity-70"
                 >
                   Sign In
                 </Link>
-                <Link 
-                  href="/signup" 
+                <Link
+                  href="/signup"
                   className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-medium active:opacity-80"
                 >
                   Get Started

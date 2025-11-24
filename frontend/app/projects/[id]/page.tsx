@@ -186,8 +186,8 @@ export default function ProjectPage() {
 
   return (
     <div className="min-h-screen pb-12 font-sans text-gray-900">
-      {/* Header */}
-      <header className="sticky top-0 z-20 bg-[#F5F5F7]/80 backdrop-blur-md border-b border-gray-200/50">
+      {/* Project Controls Bar */}
+      <div className="sticky top-16 z-20 bg-[#F5F5F7]/95 backdrop-blur-sm border-b border-gray-200/50">
         <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
@@ -236,7 +236,7 @@ export default function ProjectPage() {
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
       <main className="max-w-[1600px] mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
