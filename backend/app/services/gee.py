@@ -618,6 +618,110 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
     else:
         trend_classification = "Stable"
     
+    # QA/QC METRICS (Accuracy Indicators)
+    # Calculate pixel count, stdDev, cloud coverage, GEDI shots, and confidence score
+    
+    pixel_count = 0
+    ndvi_stddev = 0.0
+    soc_stddev = 0.0
+    rainfall_stddev = 0.0
+    cloud_coverage_percent = 0.0
+    gedi_shot_count = 0
+    data_confidence_score = 100.0  # Start with perfect score
+    
+    try:
+        # 1. Pixel Count & NDVI StdDev
+        # Use the same S2 collection as NDVI mean
+        s2_qa = ee.ImageCollection('COPERNICUS/S2_SR') \
+            .filterDate(s2_start, s2_end) \
+            .filterBounds(geom) \
+            .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
+            .median()
+        
+        nir_qa = s2_qa.select('B8').divide(10000)
+        red_qa = s2_qa.select('B4').divide(10000)
+        ndvi_qa = nir_qa.subtract(red_qa).divide(nir_qa.add(red_qa))
+        
+        qa_stats = ndvi_qa.reduceRegion(
+            ee.Reducer.count().combine(ee.Reducer.stdDev(), '', True),
+            geom,
+            scale=30,
+            maxPixels=1e9,
+            bestEffort=True
+        ).getInfo()
+        
+        pixel_count = int(qa_stats.get('count') or 0)
+        ndvi_stddev = float(qa_stats.get('stdDev') or 0.0)
+        
+        # 2. SOC StdDev
+        # Re-use soc_total image if possible, or just re-calculate stdDev on one layer for proxy
+        # Using the first layer (0-5cm) as proxy for variability
+        soc_proxy = ee.Image('OpenLandMap/SOL/SOL_ORGANIC-CARBON_USDA-6A1C_M/v02').select('b0')
+        soc_std = soc_proxy.reduceRegion(
+            ee.Reducer.stdDev(),
+            geom,
+            scale=250,
+            maxPixels=1e9,
+            bestEffort=True
+        ).getInfo()
+        soc_stddev = float(soc_std.get('b0') or 0.0)
+        
+        # 3. Rainfall StdDev (Spatial variability)
+        rain_std = rainfall.reduceRegion(
+            ee.Reducer.stdDev(),
+            geom,
+            scale=5000,
+            maxPixels=1e9,
+            bestEffort=True
+        ).getInfo()
+        rainfall_stddev = float(rain_std.get('rain') or 0.0)
+        
+        # 4. Cloud Coverage Percentage
+        # Use Sentinel-2 Cloud Probability
+        s2_cloud = ee.ImageCollection('COPERNICUS/S2_CLOUD_PROBABILITY') \
+            .filterDate(s2_start, s2_end) \
+            .filterBounds(geom)
+        
+        # Calculate mean cloud probability over the region
+        cloud_prob_mean = s2_cloud.mean().reduceRegion(
+            ee.Reducer.mean(),
+            geom,
+            scale=30,
+            maxPixels=1e9,
+            bestEffort=True
+        ).getInfo()
+        cloud_coverage_percent = float(cloud_prob_mean.get('probability') or 0.0)
+        
+        # 5. GEDI Shot Count (L2A)
+        # Count actual lidar shots
+        gedi_shots = ee.FeatureCollection('LARSE/GEDI/GEDI02_A_002') \
+            .filterBounds(geom) \
+            .filterDate('2019-01-01', '2024-12-31')
+        
+        gedi_shot_count = int(gedi_shots.size().getInfo())
+        
+        # 6. Data Confidence Score Calculation
+        # Base score: 100
+        # Penalties:
+        # - Low pixel count (<50): -20
+        # - High cloud coverage (>20%): -20
+        # - No GEDI shots: -10
+        # - High NDVI StdDev (>0.2): -10 (indicates high heterogeneity or noise)
+        
+        if pixel_count < 50:
+            data_confidence_score -= 20
+        if cloud_coverage_percent > 20:
+            data_confidence_score -= 20
+        if gedi_shot_count == 0:
+            data_confidence_score -= 10
+        if ndvi_stddev > 0.2:
+            data_confidence_score -= 10
+            
+        data_confidence_score = max(0.0, min(100.0, data_confidence_score))
+        
+    except Exception as e:
+        print(f"QA/QC Metrics Error: {e}")
+    
     # Evaluate all Earth Engine expressions to Python at once
     result = ee.Dictionary(metrics_dict).getInfo()
     
@@ -640,5 +744,13 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         'fire_recent_burn': bool(fire_recent_burn),
         'rainfall_anomaly_percent': float(rainfall_anomaly_percent),
         'trend_classification': trend_classification,
+        # QA/QC Metrics
+        'pixel_count': int(pixel_count),
+        'ndvi_stddev': float(ndvi_stddev),
+        'soc_stddev': float(soc_stddev),
+        'rainfall_stddev': float(rainfall_stddev),
+        'cloud_coverage_percent': float(cloud_coverage_percent),
+        'gedi_shot_count': int(gedi_shot_count),
+        'data_confidence_score': float(data_confidence_score),
     }
 

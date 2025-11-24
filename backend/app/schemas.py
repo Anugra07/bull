@@ -88,7 +88,16 @@ class ComputeOut(BaseModel):
     fire_burn_percent: float | None = None
     fire_recent_burn: bool | None = None
     rainfall_anomaly_percent: float | None = None
+    rainfall_anomaly_percent: float | None = None
     trend_classification: str | None = None
+    # QA/QC Metrics
+    pixel_count: int | None = None
+    ndvi_stddev: float | None = None
+    soc_stddev: float | None = None
+    rainfall_stddev: float | None = None
+    cloud_coverage_percent: float | None = None
+    gedi_shot_count: int | None = None
+    data_confidence_score: float | None = None
     baseline_condition: str | None = None  # Overall baseline assessment
     
     # BASELINE Carbon Stock (MRV Compliance)
@@ -105,3 +114,12 @@ class ComputeOut(BaseModel):
     # ADDITIONALITY (Carbon Credits = Project - Baseline)
     additionality_annual_co2: float | None = None
     additionality_20yr: float | None = None
+    
+    # QA/QC Metrics
+    pixel_count: int | None = None
+    ndvi_stddev: float | None = None
+    soc_stddev: float | None = None
+    rainfall_stddev: float | None = None
+    cloud_coverage_percent: float | None = None
+    gedi_shot_count: int | None = None
+    data_confidence_score: float | None = None
