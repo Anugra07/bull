@@ -79,17 +79,40 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
 
     geom = _ee_geometry_from_geojson(geojson)
 
-    # Time windows (example: last 2 years)
+    # Time windows (2-year period for seasonal analysis)
     s2_start, s2_end = '2023-01-01', '2024-12-31'
 
-    # Sentinel-2 surface reflectance (compute NDVI/EVI means)
-    # Select only common spectral bands to avoid band incompatibility issues
-    s2_collection = ee.ImageCollection('COPERNICUS/S2_SR') \
+    # Cloud masking function using SCL (Scene Classification Layer)
+    # SCL values: 3=cloud_shadow, 8=cloud_medium, 9=cloud_high, 10=thin_cirrus, 11=snow
+    def mask_s2_clouds(image):
+        """Mask clouds using SCL band (more accurate than CLOUDY_PIXEL_PERCENTAGE)"""
+        scl = image.select('SCL')
+        # Mask clouds, shadows, and cirrus (keep only clear pixels: 4=vegetation, 5=not_vegetated, 6=water)
+        mask = scl.eq(4).Or(scl.eq(5)).Or(scl.eq(6))
+        return image.updateMask(mask)
+
+    # Sentinel-2 surface reflectance with SCL cloud masking
+    # Using 10m native resolution for B2, B3, B4, B8 (not 30m)
+    s2_collection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
         .filterDate(s2_start, s2_end) \
         .filterBounds(geom) \
-        .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
-        .select(['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8', 'B8A', 'B9', 'B11', 'B12'])  # Common spectral bands only
-    s2 = s2_collection.median()
+        .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 30)) \
+        .map(mask_s2_clouds) \
+        .select(['B2', 'B3', 'B4', 'B8', 'B11', 'B12'])  # 10m + 20m bands
+    
+    # Create seasonal composites for better phenological signal
+    # Dry season (Nov-Apr) and Wet season (May-Oct) - adjust based on region
+    s2_dry = s2_collection.filter(ee.Filter.calendarRange(11, 4, 'month')).median()
+    s2_wet = s2_collection.filter(ee.Filter.calendarRange(5, 10, 'month')).median()
+    
+    # Use dry season composite (typically better for vegetation analysis - less cloud cover)
+    # Fall back to wet season if dry season has no data
+    s2 = ee.Algorithms.If(
+        s2_dry.bandNames().size().gt(0),
+        s2_dry,
+        s2_wet
+    )
+    s2 = ee.Image(s2)
 
     # Scale reflectance for NDVI/EVI (S2 SR bands are in 0-10000)
     nir = s2.select('B8').divide(10000)
@@ -102,18 +125,18 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         { 'NIR': nir, 'RED': red, 'BLUE': blue }
     ).rename('EVI')
 
-    # Use bestEffort to handle large regions automatically
+    # Use 10m native resolution for NDVI/EVI (B4 and B8 are 10m bands)
     ndvi_mean = ndvi.reduceRegion(
         ee.Reducer.mean(), 
         geom, 
-        scale=30, 
+        scale=10,  # Native 10m resolution
         maxPixels=1e9,
         bestEffort=True
     ).get('NDVI')
     evi_mean = evi.reduceRegion(
         ee.Reducer.mean(), 
         geom, 
-        scale=30, 
+        scale=10,  # Native 10m resolution
         maxPixels=1e9,
         bestEffort=True
     ).get('EVI')
@@ -450,10 +473,11 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         
         for year in years:
             try:
-                s2_year = ee.ImageCollection('COPERNICUS/S2_SR') \
+                s2_year = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
                     .filterDate(f'{year}-01-01', f'{year}-12-31') \
                     .filterBounds(geom) \
-                    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
+                    .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 30)) \
+                    .map(mask_s2_clouds) \
                     .select(['B4', 'B8'])
                 
                 # Check if we have data for this year
@@ -467,7 +491,7 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
                     ndvi_mean_y = ndvi_y.reduceRegion(
                         ee.Reducer.mean(),
                         geom,
-                        scale=30,
+                        scale=10,  # 10m native resolution
                         maxPixels=1e9,
                         bestEffort=True
                     ).getInfo()
@@ -631,12 +655,12 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
     
     try:
         # 1. Pixel Count & NDVI StdDev
-        # Use the same S2 collection as NDVI mean
-        # Select only common spectral bands to avoid band incompatibility
-        s2_qa = ee.ImageCollection('COPERNICUS/S2_SR') \
+        # Use SCL-masked collection at 10m native resolution
+        s2_qa = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
             .filterDate(s2_start, s2_end) \
             .filterBounds(geom) \
-            .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
+            .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 30)) \
+            .map(mask_s2_clouds) \
             .select(['B4', 'B8']) \
             .median()
         
@@ -647,7 +671,7 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         qa_stats = ndvi_qa.reduceRegion(
             ee.Reducer.count().combine(ee.Reducer.stdDev(), '', True),
             geom,
-            scale=30,
+            scale=10,  # 10m native resolution
             maxPixels=1e9,
             bestEffort=True
         ).getInfo()
@@ -678,21 +702,42 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         ).getInfo()
         rainfall_stddev = float(rain_std.get('rain') or 0.0)
         
-        # 4. Cloud Coverage Percentage
-        # Use Sentinel-2 Cloud Probability
-        s2_cloud = ee.ImageCollection('COPERNICUS/S2_CLOUD_PROBABILITY') \
-            .filterDate(s2_start, s2_end) \
-            .filterBounds(geom)
-        
-        # Calculate mean cloud probability over the region
-        cloud_prob_mean = s2_cloud.mean().reduceRegion(
-            ee.Reducer.mean(),
-            geom,
-            scale=30,
-            maxPixels=1e9,
-            bestEffort=True
-        ).getInfo()
-        cloud_coverage_percent = float(cloud_prob_mean.get('probability') or 0.0)
+        # 4. Cloud Coverage Percentage (SCL-based pixel-level detection)
+        # More accurate than CLOUDY_PIXEL_PERCENTAGE metadata
+        try:
+            s2_cloud_scl = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
+                .filterDate(s2_start, s2_end) \
+                .filterBounds(geom) \
+                .select('SCL')
+            
+            # Calculate percentage of cloudy pixels (SCL values 8, 9, 10 = clouds/cirrus)
+            scl_median = s2_cloud_scl.median()
+            cloud_mask = scl_median.eq(8).Or(scl_median.eq(9)).Or(scl_median.eq(10))
+            
+            # Calculate cloud percentage
+            total_pixels = ee.Image.pixelArea().reduceRegion(
+                ee.Reducer.count(),
+                geom,
+                scale=20,  # SCL is 20m resolution
+                maxPixels=1e9,
+                bestEffort=True
+            ).getInfo()
+            
+            cloudy_pixels = ee.Image.pixelArea().updateMask(cloud_mask).reduceRegion(
+                ee.Reducer.count(),
+                geom,
+                scale=20,
+                maxPixels=1e9,
+                bestEffort=True
+            ).getInfo()
+            
+            total_count = float(list(total_pixels.values())[0]) if total_pixels else 1.0
+            cloudy_count = float(list(cloudy_pixels.values())[0]) if cloudy_pixels else 0.0
+            
+            cloud_coverage_percent = (cloudy_count / total_count * 100.0) if total_count > 0 else 0.0
+        except Exception as e:
+            print(f"Cloud coverage error: {e}")
+            cloud_coverage_percent = 0.0
         
         # 5. GEDI Shot Count (L2A)
         # Count actual lidar shots
