@@ -120,7 +120,13 @@ def compute_carbon(
     """
     # Get ecosystem classification from land cover
     land_cover_class = int(metrics.get("land_cover", 0))
-    ecosystem_type, ecosystem_params = get_ecosystem_info(land_cover_class)
+    
+    # Extract latitude for climate-specific sequestration rates
+    # Use elevation as proxy if available, otherwise default to 0 (tropical)
+    # Better: extract from geometry centroid if available
+    latitude = float(metrics.get("latitude", 0.0))
+    
+    _, ecosystem_params = get_ecosystem_info(land_cover_class, latitude)
     
     # Use ecosystem-specific parameters if not explicitly provided
     if annual_rate_tco2_ha_yr is None:

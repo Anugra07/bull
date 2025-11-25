@@ -91,6 +91,14 @@ def compute(payload: ComputeIn) -> Any:
         # Additionality (Carbon Credits)
         "additionality_annual_co2": computed.get("additionality_annual_co2"),
         "additionality_20yr": computed.get("additionality_20yr"),
+        # QA/QC Metrics
+        "pixel_count": metrics.get("pixel_count"),
+        "ndvi_stddev": metrics.get("ndvi_stddev"),
+        "soc_stddev": metrics.get("soc_stddev"),
+        "rainfall_stddev": metrics.get("rainfall_stddev"),
+        "cloud_coverage_percent": metrics.get("cloud_coverage_percent"),
+        "gedi_shot_count": metrics.get("gedi_shot_count"),
+        "data_confidence_score": metrics.get("data_confidence_score"),
     }
 
     try:

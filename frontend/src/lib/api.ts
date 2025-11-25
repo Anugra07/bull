@@ -35,6 +35,14 @@ export type AnalysisResult = {
   fire_recent_burn: boolean;
   rainfall_anomaly_percent: number;
   trend_classification: string;
+  // QA/QC Metrics
+  pixel_count?: number;
+  ndvi_stddev?: number;
+  soc_stddev?: number;
+  rainfall_stddev?: number;
+  cloud_coverage_percent?: number;
+  gedi_shot_count?: number;
+  data_confidence_score?: number;
 };
 
 export type ComputeResult = {
@@ -79,6 +87,15 @@ export type ComputeResult = {
   // ADDITIONALITY (Carbon Credits)
   additionality_annual_co2?: number;
   additionality_20yr?: number;
+
+  // QA/QC Metrics
+  pixel_count?: number;
+  ndvi_stddev?: number;
+  soc_stddev?: number;
+  rainfall_stddev?: number;
+  cloud_coverage_percent?: number;
+  gedi_shot_count?: number;
+  data_confidence_score?: number;
 };
 
 export const api = {

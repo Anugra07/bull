@@ -35,14 +35,37 @@ ECOSYSTEM_TYPES = {
 # Ecosystem-specific annual CO2 sequestration rates (tCO2e/ha/yr)
 # Based on IPCC Tier 1 defaults and literature estimates
 # Sources: IPCC Guidelines, regional sequestration studies
-# Ecosystem-specific annual CO2 sequestration rates (tCO2e/ha/yr)
-# Based on IPCC Tier 1 defaults and literature estimates
-# Sources: IPCC Guidelines, regional sequestration studies
+
+# Climate-specific forest sequestration rates (IPCC-based)
+# Boreal (|lat| > 55°): 1.5-4.4 tCO2e/ha/yr (using midpoint 3.0)
+# Temperate (23.5° < |lat| <= 55°): 5.5-16.5 tCO2e/ha/yr (using midpoint 11.0)
+# Tropical (|lat| <= 23.5°): 14.7-29.4 tCO2e/ha/yr (using midpoint 22.0)
+
+def get_forest_sequestration_rate(latitude: float) -> float:
+    """
+    Get climate-specific forest sequestration rate based on latitude.
+    
+    Args:
+        latitude: Latitude in degrees (-90 to 90)
+    
+    Returns:
+        Annual CO2 sequestration rate in tCO2e/ha/yr
+    """
+    abs_lat = abs(latitude)
+    
+    if abs_lat > 55:  # Boreal
+        return 3.0
+    elif abs_lat > 23.5:  # Temperate
+        return 11.0
+    else:  # Tropical
+        return 22.0
+
+# Base ecosystem sequestration rates (non-forest)
 ECOSYSTEM_SEQUESTRATION_RATES = {
-    "Forest": 8.0,  # Tropical/subtropical forests (User/Research: 6-10)
+    "Forest": 11.0,  # Default temperate (will be overridden by climate function)
     "Mangrove": 10.0,  # Mangroves (User/Research: 8-12)
     "Cropland": 0.8,  # Agricultural soils (User: 0.5-1)
-    "Grassland": 1.5,  # Managed grasslands (User: 1-2)
+    "Grassland": 1.5,  # Managed grasslands (IPCC: ~1.3)
     "Wetland": 4.0,  # Wetlands/Peatlands (User: varies, Research: 2-5+)
     "Shrubland": 2.0,  # Shrublands (User: 1-3)
     "Plantation": 6.0,  # Managed plantations
@@ -123,12 +146,13 @@ def classify_ecosystem(land_cover_class: int) -> str:
     return "Other"
 
 
-def get_ecosystem_parameters(ecosystem_type: str) -> Dict:
+def get_ecosystem_parameters(ecosystem_type: str, latitude: float = 0.0) -> Dict:
     """
     Get ecosystem-specific parameters for carbon calculations.
     
     Args:
         ecosystem_type: Ecosystem classification string
+        latitude: Latitude in degrees (for climate-specific forest rates)
     
     Returns:
         Dictionary with:
@@ -137,28 +161,36 @@ def get_ecosystem_parameters(ecosystem_type: str) -> Dict:
         - drought_risk: Default drought risk factor
         - trend_loss: Default trend loss factor
     """
-    return {
-        "sequestration_rate": ECOSYSTEM_SEQUESTRATION_RATES.get(
+    # Use climate-specific rate for forests
+    if ecosystem_type == "Forest":
+        seq_rate = get_forest_sequestration_rate(latitude)
+    else:
+        seq_rate = ECOSYSTEM_SEQUESTRATION_RATES.get(
             ecosystem_type, ECOSYSTEM_SEQUESTRATION_RATES["Other"]
-        ),
+        )
+    
+    return {
+        "sequestration_rate": seq_rate,
         **ECOSYSTEM_DEFAULT_RISKS.get(
             ecosystem_type, ECOSYSTEM_DEFAULT_RISKS["Other"]
         )
     }
 
 
-def get_ecosystem_info(land_cover_class: int) -> Tuple[str, Dict]:
+def get_ecosystem_info(land_cover_class: int, latitude: float = 0.0) -> Tuple[str, Dict]:
     """
     Get complete ecosystem information including classification and parameters.
     
     Args:
         land_cover_class: ESA WorldCover class code
+        latitude: Latitude in degrees (for climate-specific rates)
     
     Returns:
         Tuple of (ecosystem_type, parameters_dict)
     """
     ecosystem_type = classify_ecosystem(land_cover_class)
-    parameters = get_ecosystem_parameters(ecosystem_type)
+    parameters = get_ecosystem_parameters(ecosystem_type, latitude)
     
     return ecosystem_type, parameters
+
 

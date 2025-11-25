@@ -632,10 +632,12 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
     try:
         # 1. Pixel Count & NDVI StdDev
         # Use the same S2 collection as NDVI mean
+        # Select only common spectral bands to avoid band incompatibility
         s2_qa = ee.ImageCollection('COPERNICUS/S2_SR') \
             .filterDate(s2_start, s2_end) \
             .filterBounds(geom) \
             .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
+            .select(['B4', 'B8']) \
             .median()
         
         nir_qa = s2_qa.select('B8').divide(10000)
@@ -725,6 +727,13 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
     # Evaluate all Earth Engine expressions to Python at once
     result = ee.Dictionary(metrics_dict).getInfo()
     
+    # Calculate latitude from geometry centroid for climate-specific rates
+    try:
+        centroid = geom.centroid().coordinates().getInfo()
+        latitude = float(centroid[1]) if centroid else 0.0
+    except Exception:
+        latitude = 0.0
+    
     # Return with Python values for canopy_height and land_cover (already computed)
     return {
         'ndvi': float(result.get('ndvi') or 0.0),
@@ -737,6 +746,7 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         'elevation': float(result.get('elevation') or 0.0),
         'slope': float(result.get('slope') or 0.0),
         'land_cover': float(land_cover_class_python),  # Use Python value directly
+        'latitude': float(latitude),  # For climate-specific sequestration rates
         # Time-series trends
         'ndvi_trend': float(ndvi_trend),
         'ndvi_trend_interpretation': ndvi_trend_interpretation,

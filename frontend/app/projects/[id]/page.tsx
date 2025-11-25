@@ -67,6 +67,14 @@ export default function ProjectPage() {
     // Additionality (Credits)
     additionality_annual_co2?: number;
     additionality_20yr?: number;
+    // QA/QC Metrics
+    pixel_count?: number;
+    ndvi_stddev?: number;
+    soc_stddev?: number;
+    rainfall_stddev?: number;
+    cloud_coverage_percent?: number;
+    gedi_shot_count?: number;
+    data_confidence_score?: number;
   }>(null);
 
   useEffect(() => {
@@ -140,6 +148,14 @@ export default function ProjectPage() {
                 // Additionality (Credits)
                 additionality_annual_co2: latestResult.additionality_annual_co2,
                 additionality_20yr: latestResult.additionality_20yr,
+                // QA/QC Metrics
+                pixel_count: latestResult.pixel_count,
+                ndvi_stddev: latestResult.ndvi_stddev,
+                soc_stddev: latestResult.soc_stddev,
+                rainfall_stddev: latestResult.rainfall_stddev,
+                cloud_coverage_percent: latestResult.cloud_coverage_percent,
+                gedi_shot_count: latestResult.gedi_shot_count,
+                data_confidence_score: latestResult.data_confidence_score,
               });
             }
           }
@@ -210,6 +226,14 @@ export default function ProjectPage() {
           // Additionality (Credits)
           additionality_annual_co2: c.additionality_annual_co2,
           additionality_20yr: c.additionality_20yr,
+          // QA/QC Metrics
+          pixel_count: c.pixel_count,
+          ndvi_stddev: c.ndvi_stddev,
+          soc_stddev: c.soc_stddev,
+          rainfall_stddev: c.rainfall_stddev,
+          cloud_coverage_percent: c.cloud_coverage_percent,
+          gedi_shot_count: c.gedi_shot_count,
+          data_confidence_score: c.data_confidence_score,
         });
       } catch (e: any) {
         alert(`Compute error: ${e.message || e}`);
@@ -560,6 +584,96 @@ export default function ProjectPage() {
                         <strong className="text-green-600"> project scenario</strong> (with intervention) against the
                         <strong className="text-gray-700"> baseline scenario</strong> ({compute.baseline_scenario?.toLowerCase()}).
                         This methodology meets MRV (Monitoring, Reporting, Verification) standards for carbon offset projects.
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {/* Data Quality & Accuracy (QA/QC) */}
+            {compute && compute.data_confidence_score !== undefined && (
+              <div className="animate-in fade-in slide-in-from-bottom-12 duration-700 delay-200">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">Data Quality & Accuracy</h2>
+
+                <Card className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Confidence Score - Large Display */}
+                    <div className="md:col-span-4 text-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200/50">
+                      <div className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-2">Overall Confidence Score</div>
+                      <div className={`text-6xl font-bold mb-2 ${(compute.data_confidence_score ?? 0) >= 80 ? 'text-green-600' :
+                        (compute.data_confidence_score ?? 0) >= 60 ? 'text-yellow-600' :
+                          'text-red-600'
+                        }`}>
+                        {(compute.data_confidence_score ?? 0).toFixed(0)}
+                      </div>
+                      <div className="text-sm text-gray-500">out of 100</div>
+                      <div className="mt-4 text-xs text-gray-600">
+                        {(compute.data_confidence_score ?? 0) >= 80 && '✓ High confidence - Excellent data quality'}
+                        {(compute.data_confidence_score ?? 0) >= 60 && (compute.data_confidence_score ?? 0) < 80 && '⚠ Moderate confidence - Good data quality'}
+                        {(compute.data_confidence_score ?? 0) < 60 && '⚠ Low confidence - Limited data quality'}
+                      </div>
+                    </div>
+
+                    {/* Cloud Coverage */}
+                    <Card className="p-4 flex flex-col justify-center bg-white">
+                      <div className="flex items-center gap-3 mb-2">
+                        <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
+                        </svg>
+                        <div className="text-sm font-medium text-gray-500">Cloud Coverage</div>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">{(compute.cloud_coverage_percent ?? 0).toFixed(1)}%</div>
+                      <div className="text-xs text-gray-400 mt-1">Sentinel-2 scenes</div>
+                    </Card>
+
+                    {/* GEDI Shots */}
+                    <Card className="p-4 flex flex-col justify-center bg-white">
+                      <div className="flex items-center gap-3 mb-2">
+                        <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                        </svg>
+                        <div className="text-sm font-medium text-gray-500">GEDI Shots</div>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">{compute.gedi_shot_count ?? 0}</div>
+                      <div className="text-xs text-gray-400 mt-1">Lidar measurements</div>
+                    </Card>
+
+                    {/* Pixel Count */}
+                    <Card className="p-4 flex flex-col justify-center bg-white">
+                      <div className="flex items-center gap-3 mb-2">
+                        <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                        </svg>
+                        <div className="text-sm font-medium text-gray-500">Valid Pixels</div>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">{(compute.pixel_count ?? 0).toLocaleString()}</div>
+                      <div className="text-xs text-gray-400 mt-1">Data points analyzed</div>
+                    </Card>
+
+                    {/* Variability (StdDev) */}
+                    <Card className="p-4 flex flex-col justify-center bg-white">
+                      <div className="flex items-center gap-3 mb-2">
+                        <svg className="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                        </svg>
+                        <div className="text-sm font-medium text-gray-500">NDVI Variability</div>
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">{(compute.ndvi_stddev ?? 0).toFixed(3)}</div>
+                      <div className="text-xs text-gray-400 mt-1">Standard deviation</div>
+                    </Card>
+                  </div>
+
+                  {/* Explanation */}
+                  <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200/50">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      <div className="text-sm text-gray-600">
+                        <strong className="font-semibold text-gray-900">Quality Indicators:</strong> The confidence score reflects data availability and reliability.
+                        High pixel counts, low cloud coverage, and GEDI measurements increase confidence.
+                        Variability (StdDev) indicates spatial heterogeneity in the analyzed area.
                       </div>
                     </div>
                   </div>
