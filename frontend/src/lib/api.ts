@@ -108,6 +108,9 @@ export const api = {
   listProjects: (user_id: string) =>
     http<Project[]>(`/projects?user_id=${encodeURIComponent(user_id)}`),
 
+  deleteProject: (project_id: string) =>
+    http<{ message: string; id: string }>(`/projects/${encodeURIComponent(project_id)}`, { method: "DELETE" }),
+
   createPolygon: (payload: { project_id: string; geometry: any }) =>
     http<PolygonResult>(`/polygons`, { method: "POST", body: JSON.stringify(payload) }),
 

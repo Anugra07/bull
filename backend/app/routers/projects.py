@@ -51,3 +51,24 @@ def list_projects(user_id: str):
         return res.data or []
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{project_id}")
+def delete_project(project_id: str):
+    sb = get_supabase()
+    try:
+        # Delete project - cascading delete should handle related polygons/results if configured in DB
+        # If not, we might need to delete related data first, but usually DB handles this.
+        res = sb.table("projects").delete().eq("id", project_id).execute()
+        
+        # Check if deletion was successful (Supabase returns the deleted rows)
+        if not res.data:
+             # It's possible the project didn't exist, or user didn't have permission
+             # But for idempotency, we can just return success or 404 if strict
+             raise HTTPException(status_code=404, detail="Project not found or could not be deleted")
+             
+        return {"message": "Project deleted successfully", "id": project_id}
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise
+        raise HTTPException(status_code=500, detail=str(e))

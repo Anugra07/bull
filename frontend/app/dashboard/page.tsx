@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { api, Project } from "@/lib/api";
-import { Plus, ArrowRight, FolderOpen, LogOut } from "lucide-react";
+import { Plus, ArrowRight, FolderOpen, Trash2 } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -56,6 +56,24 @@ export default function Dashboard() {
     }
   };
 
+  const handleDelete = async (e: React.MouseEvent, projectId: string, projectName: string) => {
+    e.preventDefault(); // Prevent navigation
+    e.stopPropagation();
+
+    if (!confirm(`Are you sure you want to delete project "${projectName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await api.deleteProject(projectId);
+      // Remove from state
+      setProjects(projects.filter(p => p.id !== projectId));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete project");
+    }
+  };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/");
@@ -100,11 +118,20 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map((project) => (
               <Link key={project.id} href={`/projects/${project.id}`} className="group block">
-                <Card className="h-full p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-1 group-hover:border-gray-200">
+                <Card className="h-full p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-1 group-hover:border-gray-200 relative">
                   <div className="flex flex-col h-full justify-between">
                     <div>
-                      <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center mb-4 text-gray-900 group-hover:bg-gray-900 group-hover:text-white transition-colors">
-                        <FolderOpen className="w-5 h-5" />
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-900 group-hover:bg-gray-900 group-hover:text-white transition-colors">
+                          <FolderOpen className="w-5 h-5" />
+                        </div>
+                        <button
+                          onClick={(e) => handleDelete(e, project.id, project.name)}
+                          className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
+                          title="Delete Project"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors">
                         {project.name}
