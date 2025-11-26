@@ -8,12 +8,44 @@ export default function FileUpload({ onGeoJSON }: { onGeoJSON: (gj: any) => void
   const [fileName, setFileName] = useState<string | null>(null);
 
   const handleFile = async (file: File) => {
+    console.log("📁 File upload started:", file.name);
     const ext = file.name.toLowerCase().split(".").pop();
+    console.log("📝 File extension:", ext);
+
     if (ext === "geojson" || ext === "json") {
-      const text = await file.text();
-      const gj = JSON.parse(text);
-      onGeoJSON(gj);
-      setFileName(file.name);
+      try {
+        console.log("🔄 Reading file text...");
+        const text = await file.text();
+        console.log("📄 Raw file content (first 200 chars):", text.substring(0, 200));
+        console.log("📏 File size:", text.length, "characters");
+
+        // Remove trailing commas before closing brackets/braces (common JSON error)
+        console.log("🧹 Cleaning JSON...");
+        const cleanedText = text
+          .replace(/,(\s*[}\]])/g, '$1')  // Remove trailing commas
+          .replace(/\/\/.*/g, '')          // Remove single-line comments
+          .replace(/\/\*[\s\S]*?\*\//g, ''); // Remove multi-line comments
+
+        console.log("📄 Cleaned content (first 200 chars):", cleanedText.substring(0, 200));
+
+        console.log("🔨 Parsing JSON...");
+        const gj = JSON.parse(cleanedText);
+        console.log("✅ JSON parsed successfully!");
+        console.log("📊 GeoJSON type:", gj.type);
+        console.log("📊 GeoJSON structure:", JSON.stringify(gj, null, 2).substring(0, 300));
+
+        console.log("📤 Sending GeoJSON to parent component...");
+        onGeoJSON(gj);
+        setFileName(file.name);
+        console.log("✅ File upload complete!");
+      } catch (error) {
+        console.error("❌ JSON parse error:", error);
+        console.error("Error details:", {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          name: error instanceof Error ? error.name : 'Unknown',
+        });
+        alert(`Invalid GeoJSON file: ${error instanceof Error ? error.message : 'Unable to parse JSON'}. Please check your file format.`);
+      }
     } else if (ext === "kml") {
       // Minimal KML to GeoJSON conversion via DOMParser (limited). For robustness, use togeojson lib later.
       const text = await file.text();

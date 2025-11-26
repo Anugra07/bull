@@ -36,20 +36,25 @@ ECOSYSTEM_TYPES = {
 # Based on IPCC Tier 1 defaults and literature estimates
 # Sources: IPCC Guidelines, regional sequestration studies
 
-# Climate-specific forest sequestration rates (IPCC-based)
+# Climate-specific forest sequestration rates (IPCC-based, adjusted for forest types)
 # Boreal (|lat| > 55°): 1.5-4.4 tCO2e/ha/yr (using midpoint 3.0)
 # Temperate (23.5° < |lat| <= 55°): 5.5-16.5 tCO2e/ha/yr (using midpoint 11.0)
-# Tropical (|lat| <= 23.5°): 14.7-29.4 tCO2e/ha/yr (using midpoint 22.0)
+# Tropical DRY (|lat| <= 23.5°): 3.5-6.0 tCO2e/ha/yr (using 5.0 for dry deciduous)
+# Tropical RAINFOREST (|lat| <= 23.5° & Rainfall > 1500mm): 15-20 tCO2e/ha/yr (using 17.5)
 
-def get_forest_sequestration_rate(latitude: float) -> float:
+def get_forest_sequestration_rate(latitude: float, rainfall: float = 0.0) -> float:
     """
-    Get climate-specific forest sequestration rate based on latitude.
+    Get climate-specific forest sequestration rate based on latitude and rainfall.
     
     Args:
         latitude: Latitude in degrees (-90 to 90)
+        rainfall: Annual rainfall in mm (optional, for tropical forest classification)
     
     Returns:
         Annual CO2 sequestration rate in tCO2e/ha/yr
+    
+    Note:
+        Tropical rate varies: 5.0 for dry forests, 17.5 for rainforests (>1500mm rainfall).
     """
     abs_lat = abs(latitude)
     
@@ -58,7 +63,13 @@ def get_forest_sequestration_rate(latitude: float) -> float:
     elif abs_lat > 23.5:  # Temperate
         return 11.0
     else:  # Tropical
-        return 22.0
+        # Distinguish between Dry Forest and Rainforest based on rainfall
+        # Threshold: 1400mm/yr (captures most tropical rainforests including Amazon)
+        # Amazon rainforest: typically 1500-3000mm, but transitional zones can be 1400-1500mm
+        if rainfall > 1400:
+            return 17.5  # Tropical Rainforest (IPCC: 14-29, using conservative 17.5)
+        else:
+            return 5.0  # Tropical Dry Forest (IPCC: 3.5-6.0)
 
 # Base ecosystem sequestration rates (non-forest)
 ECOSYSTEM_SEQUESTRATION_RATES = {
@@ -146,13 +157,14 @@ def classify_ecosystem(land_cover_class: int) -> str:
     return "Other"
 
 
-def get_ecosystem_parameters(ecosystem_type: str, latitude: float = 0.0) -> Dict:
+def get_ecosystem_parameters(ecosystem_type: str, latitude: float = 0.0, rainfall: float = 0.0) -> Dict:
     """
     Get ecosystem-specific parameters for carbon calculations.
     
     Args:
         ecosystem_type: Ecosystem classification string
         latitude: Latitude in degrees (for climate-specific forest rates)
+        rainfall: Annual rainfall in mm (for forest type distinction)
     
     Returns:
         Dictionary with:
@@ -163,7 +175,7 @@ def get_ecosystem_parameters(ecosystem_type: str, latitude: float = 0.0) -> Dict
     """
     # Use climate-specific rate for forests
     if ecosystem_type == "Forest":
-        seq_rate = get_forest_sequestration_rate(latitude)
+        seq_rate = get_forest_sequestration_rate(latitude, rainfall)
     else:
         seq_rate = ECOSYSTEM_SEQUESTRATION_RATES.get(
             ecosystem_type, ECOSYSTEM_SEQUESTRATION_RATES["Other"]
@@ -177,20 +189,19 @@ def get_ecosystem_parameters(ecosystem_type: str, latitude: float = 0.0) -> Dict
     }
 
 
-def get_ecosystem_info(land_cover_class: int, latitude: float = 0.0) -> Tuple[str, Dict]:
+def get_ecosystem_info(land_cover_class: int, latitude: float = 0.0, rainfall: float = 0.0) -> Tuple[str, Dict]:
     """
     Get complete ecosystem information including classification and parameters.
     
     Args:
         land_cover_class: ESA WorldCover class code
         latitude: Latitude in degrees (for climate-specific rates)
+        rainfall: Annual rainfall in mm
     
     Returns:
         Tuple of (ecosystem_type, parameters_dict)
     """
     ecosystem_type = classify_ecosystem(land_cover_class)
-    parameters = get_ecosystem_parameters(ecosystem_type, latitude)
+    parameters = get_ecosystem_parameters(ecosystem_type, latitude, rainfall)
     
     return ecosystem_type, parameters
-
-

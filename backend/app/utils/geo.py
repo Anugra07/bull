@@ -5,10 +5,36 @@ from pyproj import Geod
 
 geod = Geod(ellps="WGS84")
 
-def normalize_geometry(geojson: Any) -> dict:
-    if isinstance(geojson, dict) and geojson.get("type") == "Feature":
-        return geojson["geometry"]
-    return geojson
+def normalize_geometry(geom_input: Any) -> Any:
+    """
+    Accept GeoJSON Feature, FeatureCollection, or raw Geometry dict.
+    Returns a geometry dict suitable for shapely.
+    """
+    if isinstance(geom_input, dict):
+        geom_type = geom_input.get("type", "").lower()
+        
+        # Handle FeatureCollection - extract first feature's geometry
+        if geom_type == "featurecollection":
+            features = geom_input.get("features", [])
+            if not features or len(features) == 0:
+                raise ValueError("FeatureCollection has no features")
+            # Get first feature's geometry
+            first_feature = features[0]
+            if isinstance(first_feature, dict) and first_feature.get("type") == "Feature":
+                return first_feature.get("geometry")
+            return first_feature
+        
+        # Handle Feature - extract geometry
+        if geom_type == "feature":
+            return geom_input.get("geometry")
+        
+        # Already a geometry (polygon, multipolygon, etc.)
+        if geom_type in ["polygon", "multipolygon", "point", "linestring", "multipoint", "multilinestring"]:
+            return geom_input
+        
+        raise ValueError(f"Unknown geometry type: '{geom_type}'")
+    
+    return geom_input
 
 
 def clean_and_validate(geojson_geom: Any) -> Tuple[MultiPolygon | Polygon, float, List[float]]:

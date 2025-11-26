@@ -197,6 +197,7 @@ export default function ProjectPage() {
       // Call analysis with polygon_id to compute metrics via GEE
       try {
         const analysis = await api.analyze({ polygon_id: res.id, soil_depth: soilDepth });
+        console.log("📊 Analysis Results:", analysis);
         setMetrics(analysis);
       } catch (e: any) {
         // If GEE not configured, show a helpful message
@@ -206,6 +207,7 @@ export default function ProjectPage() {
       // Compute carbon figures and store in project_results
       try {
         const c = await api.compute({ project_id: projectId, polygon_id: res.id, soil_depth: soilDepth });
+        console.log("💰 Compute Results:", c);
         setCompute({
           carbon_biomass: c.carbon_biomass,
           soc_total: c.soc_total,
