@@ -205,3 +205,4 @@ def get_ecosystem_info(land_cover_class: int, latitude: float = 0.0, rainfall: f
     parameters = get_ecosystem_parameters(ecosystem_type, latitude, rainfall)
     
     return ecosystem_type, parameters
+
