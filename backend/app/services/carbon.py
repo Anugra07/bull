@@ -221,10 +221,16 @@ def compute_carbon(
     additionality_annual_co2 = max(0.0, additionality_annual_co2)
     additionality_20yr = max(0.0, additionality_20yr)
 
+    # Calculate Total Carbon Stock (Biomass + SOC)
+    carbon_biomass_total = carbon_biomass_tc * area_ha  # Total biomass carbon (tC)
+    total_carbon_stock = carbon_biomass_total + soc_tC  # Total Carbon (Biomass + SOC)
+
     return (
         {
             "carbon_biomass": carbon_biomass_tc,
+            "carbon_biomass_total": carbon_biomass_total,  # NEW: Total Biomass Carbon (tC)
             "soc_total": soc_tC,  # store in tC
+            "total_carbon_stock": total_carbon_stock,      # NEW: Total Carbon Stock (tC)
             "annual_co2": annual_co2,  # tCO2e/yr (kept for backward compatibility)
             "co2_20yr": co2_20yr,      # tCO2e over 20 years (kept for backward compatibility)
             "risk_adjusted_co2": risk_adjusted_co2,

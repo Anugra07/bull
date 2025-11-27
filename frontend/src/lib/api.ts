@@ -59,7 +59,10 @@ export type ComputeResult = {
   slope?: number;
   land_cover?: number;
   carbon_biomass?: number;
+  carbon_biomass_total?: number; // NEW
   soc_total?: number;
+  total_carbon_stock?: number;   // NEW
+  biomass_source?: string;       // NEW: Track data source (gedi_l4a_monthly, esa_cci_2020, etc.)
   annual_co2?: number;
   co2_20yr?: number;
   risk_adjusted_co2?: number;

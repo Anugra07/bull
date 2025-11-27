@@ -365,7 +365,70 @@ export default function ProjectPage() {
               </div>
             )}
 
-            {/* Trends & Risk Indicators (Time-Series Analysis) */}
+            {/* Total Carbon Stock (Biomass + SOC) */}
+            {compute && (
+              <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">Total Carbon Stock</h2>
+                  <span className="text-sm text-gray-500">Biomass + Soil Organic Carbon</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Total Carbon */}
+                  <Card className="p-6 bg-gradient-to-br from-gray-900 to-gray-800 text-white shadow-xl">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-1">Total Carbon Stock</h3>
+                        <p className="text-xs text-gray-400">Combined ecosystem storage</p>
+                      </div>
+                      <div className="p-2 bg-white/10 rounded-lg">
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                      </div>
+                    </div>
+                    <div className="text-4xl font-bold mb-2">
+                      {((compute.carbon_biomass ?? 0) + (compute.soc_total ?? 0)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </div>
+                    <div className="text-sm text-gray-300">tC (tonnes of carbon)</div>
+                  </Card>
+
+                  {/* Biomass Carbon */}
+                  <Card className="p-6 bg-white border border-gray-100 shadow-sm">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Biomass Carbon</h3>
+                        <p className="text-xs text-gray-500">Above & below ground vegetation</p>
+                      </div>
+                      <div className="p-2 bg-green-50 rounded-lg">
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                      </div>
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900 mb-2">
+                      {(compute.carbon_biomass ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </div>
+                    <div className="text-sm text-gray-500">tC ({(compute.carbon_biomass ?? 0).toFixed(1)} tC/ha)</div>
+                  </Card>
+
+                  {/* Soil Organic Carbon */}
+                  <Card className="p-6 bg-white border border-gray-100 shadow-sm">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Soil Organic Carbon</h3>
+                        <p className="text-xs text-gray-500">Stored in soil (0-{soilDepth.replace("0-", "")})</p>
+                      </div>
+                      <div className="p-2 bg-amber-50 rounded-lg">
+                        <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                      </div>
+                    </div>
+                    <div className="text-3xl font-bold text-gray-900 mb-2">
+                      {(compute.soc_total ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </div>
+                    <div className="text-sm text-gray-500">tC ({(metrics?.soc ?? 0).toFixed(1)} tC/ha)</div>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* Trends & Risk Indicators */}
             {metrics && (
               <div className="animate-in fade-in slide-in-from-bottom-6 duration-700 delay-75">
                 <div className="flex items-center justify-between mb-6">

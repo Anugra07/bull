@@ -1,6 +1,8 @@
 import os
 import sys
 import json
+import ee
+from dotenv import load_dotenv
 
 # Manually load .env
 env_path = os.path.join(os.getcwd(), 'backend', '.env')
@@ -94,11 +96,36 @@ def run_verification():
     print("="*80)
     print("VERIFICATION TEST SUITE - Amazon Polygons")
     print("="*80)
-    print()
     
-    if not init_gee():
-        print("❌ Failed to init GEE. Check env vars.")
-        return
+    # Load environment variables from .env file
+    load_dotenv()
+
+    # Initialize GEE
+    try:
+        # Try using the service account credentials from environment variables
+        service_account = os.getenv("GEE_SERVICE_ACCOUNT")
+        private_key = os.getenv("GEE_PRIVATE_KEY")
+        
+        if service_account and private_key:
+            try:
+                # If private_key is a JSON string, parse it
+                key_dict = json.loads(private_key)
+                credentials = ee.ServiceAccountCredentials(service_account, key_data=private_key)
+            except json.JSONDecodeError:
+                # If it's not JSON, assume it's a PEM string or file path (less likely here given the error)
+                # But the error 'File name too long' suggests it was treated as a filename.
+                # ee.ServiceAccountCredentials(email, key_file=None, key_data=None)
+                # We should pass key_data=private_key if it's the key content
+                credentials = ee.ServiceAccountCredentials(service_account, key_data=private_key)
+            
+            ee.Initialize(credentials)
+        else:
+            # Fallback to default credentials
+            ee.Initialize()
+        print("✅ GEE Initialized successfully")
+    except Exception as e:
+        print(f"❌ Failed to init GEE: {e}")
+        sys.exit(1) # Changed exit(1) to sys.exit(1) for consistency and clarity
     
     results_summary = []
     

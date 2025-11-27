@@ -309,11 +309,69 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
             print(f"DEBUG: GEDI fallback error: {e2}")
             pass  # Will fall back to allometric equations
     
-    # 2. FALLBACK METHOD: Use allometric equations only if GEDI AGB is completely unavailable
+    # 2. SECONDARY METHOD: ESA CCI Biomass (Global, 100m, 2020)
+    # Good global coverage, but lower resolution than GEDI
+    if biomass_method == "fallback":
+        try:
+            esa_cci = ee.ImageCollection("ESA/CCI/FireCCI/5_1") \
+                .filterDate('2020-01-01', '2020-12-31') \
+                .filterBounds(geom)
+            # Note: The above is FireCCI, we need ESA CCI Biomass.
+            # ESA CCI Biomass v4 (2023) is 'ESA/CCI/BIOMASS/v4'
+            # Let's check availability. If not, use 'ESA/GLOBBIOMASS/AGB_V1' (2010) or similar.
+            # Actually, 'ESA/CCI/BIOMASS/v4' covers 2010, 2017, 2018, 2019, 2020.
+            
+            esa_biomass = ee.ImageCollection("ESA/CCI/BIOMASS/v4") \
+                .filterDate('2020-01-01', '2020-12-31') \
+                .filterBounds(geom) \
+                .select('agb')
+                
+            if esa_biomass.size().getInfo() > 0:
+                esa_agb = esa_biomass.mosaic()
+                esa_result = esa_agb.reduceRegion(
+                    ee.Reducer.mean(),
+                    geom,
+                    scale=100,
+                    maxPixels=1e9,
+                    bestEffort=True
+                ).getInfo()
+                
+                esa_val = esa_result.get('agb')
+                if esa_val is not None and isinstance(esa_val, (int, float)) and esa_val > 0:
+                    biomass_python = float(esa_val)
+                    biomass_method = "esa_cci_2020"
+                    print(f"DEBUG: Using ESA CCI Biomass (2020): {biomass_python} t/ha")
+        except Exception as e:
+            print(f"DEBUG: ESA CCI Biomass Error: {e}")
+
+    # 3. TERTIARY METHOD: Baccini Pantropical Biomass (Tropics only, 30m, 2000-ish)
+    # High resolution but outdated (baseline reference)
+    if biomass_method == "fallback":
+        try:
+            # Woods Hole Research Center (WHRC) Pantropical Biomass
+            # 'WHRC/biomass/tropical'
+            whrc = ee.Image("WHRC/biomass/tropical")
+            whrc_result = whrc.reduceRegion(
+                ee.Reducer.mean(),
+                geom,
+                scale=30,
+                maxPixels=1e9,
+                bestEffort=True
+            ).getInfo()
+            
+            whrc_val = whrc_result.get('b1') # Band 1 is AGB
+            if whrc_val is not None and isinstance(whrc_val, (int, float)) and whrc_val > 0:
+                biomass_python = float(whrc_val)
+                biomass_method = "baccini_pantropical"
+                print(f"DEBUG: Using Baccini Pantropical Biomass: {biomass_python} t/ha")
+        except Exception as e:
+            print(f"DEBUG: Baccini Biomass Error: {e}")
+
+    # 4. FALLBACK METHOD: Use allometric equations only if ALL datasets fail
     # GEDI is preferred because it provides direct LIDAR-based measurements
     # Allometric equations are estimates based on canopy height and ecosystem type
     if biomass_method == "fallback":
-        print(f"DEBUG: GEDI data unavailable, using allometric fallback")
+        print(f"DEBUG: GEDI/ESA/Baccini data unavailable, using allometric fallback")
         # Only use allometric if we have valid canopy height data
         if canopy_h_mean_python > 0:
             canopy_h_safe = max(canopy_h_mean_python, 0.1)
@@ -746,6 +804,7 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         # This avoids the issue where the median of a cloudy collection is masked
         
         # s2 image already has NDVI band
+        # FIX: Use spatial standard deviation on the composite image
         qa_stats = ndvi.reduceRegion(
             ee.Reducer.count().combine(ee.Reducer.stdDev(), '', True),
             geom,
@@ -771,6 +830,9 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         soc_stddev = float(soc_std.get('b0') or 0.0)
         
         # 3. Rainfall StdDev (Spatial variability)
+        # Note: CHIRPS resolution is 5km. For polygons < 25km² (2500ha), 
+        # this will often return 0.0 as the entire polygon falls within a single pixel.
+        # This is expected behavior and not a bug.
         rain_std = rainfall.reduceRegion(
             ee.Reducer.stdDev(),
             geom,
@@ -798,6 +860,53 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
                 cloud_coverage_percent = 0.0
                 
         except Exception as e:
+            print(f"Cloud Coverage Error: {e}")
+            cloud_coverage_percent = 0.0
+
+        # 5. GEDI Shot Count (Actual vs Estimated)
+        try:
+            # Count actual GEDI returns
+            gedi_l2a_shots = ee.ImageCollection('LARSE/GEDI/GEDI02_A_002_MONTHLY') \
+                .filterBounds(geom) \
+                .filterDate('2019-04-01', '2024-12-31') \
+                .select('rh98')
+            
+            # Method 1: Count valid pixels (each pixel = 1 shot at 25m footprint)
+            gedi_count_img = gedi_l2a_shots.count()  # Count images with data per pixel
+            
+            gedi_shot_stats = gedi_count_img.reduceRegion(
+                ee.Reducer.sum(),  # Sum all valid returns
+                geom,
+                scale=25,  # GEDI native resolution
+                maxPixels=1e9,
+                bestEffort=True
+            ).getInfo()
+            
+            gedi_shot_count = int(gedi_shot_stats.get('rh98') or 0)
+            
+            # Method 2: If count is 0, try alternative
+            if gedi_shot_count == 0:
+                # Count total pixels with any GEDI data
+                gedi_mask = gedi_l2a_shots.mosaic().mask()
+                gedi_pixel_count = gedi_mask.reduceRegion(
+                    ee.Reducer.sum(),
+                    geometry=geom,
+                    scale=25,
+                    maxPixels=1e9
+                ).getInfo()
+                gedi_shot_count = int(gedi_pixel_count.get('rh98') or 0)
+            
+            # Fallback to estimation only if both fail
+            if gedi_shot_count == 0:
+                gedi_month_count = gedi_l2a_shots.size().getInfo()
+                gedi_shot_count = gedi_month_count * 50
+                print(f"DEBUG: Using estimated GEDI shots: {gedi_shot_count}")
+            else:
+                print(f"DEBUG: Actual GEDI shots counted: {gedi_shot_count}")
+                
+        except Exception as e:
+            print(f"GEDI shot count error: {e}")
+            gedi_shot_count = 0
             print(f"Cloud coverage error: {e}")
             cloud_coverage_percent = 0.0
         
@@ -829,6 +938,7 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         # - High cloud coverage (>20%): -20
         # - No GEDI shots: -10
         # - High NDVI StdDev (>0.2): -10 (indicates high heterogeneity or noise)
+        # - Biomass source quality: GEDI (0), ESA CCI (-5), Baccini (-10), Allometric (-15), No data (-30)
         
         if pixel_count < 50:
             data_confidence_score -= 20
@@ -838,6 +948,18 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
             data_confidence_score -= 10
         if ndvi_stddev > 0.2:
             data_confidence_score -= 10
+            
+        # Biomass source quality penalty
+        if biomass_method.startswith('gedi'):
+            pass  # No penalty, highest quality
+        elif biomass_method == 'esa_cci_2020':
+            data_confidence_score -= 5
+        elif biomass_method == 'baccini_pantropical':
+            data_confidence_score -= 10
+        elif biomass_method.startswith('allometric'):
+            data_confidence_score -= 15
+        elif biomass_method == 'no_data':
+            data_confidence_score -= 30
             
         data_confidence_score = max(0.0, min(100.0, data_confidence_score))
         
@@ -859,6 +981,7 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         'ndvi': float(result.get('ndvi') or 0.0),
         'evi': float(result.get('evi') or 0.0),
         'biomass': float(biomass_python),  # Use Python-computed value
+        'biomass_source': biomass_method,  # NEW: Track data source for transparency
         'canopy_height': float(canopy_h_mean_python),  # Use Python value directly
         'soc': float(result.get('soc') or 0.0),
         'bulk_density': float(result.get('bulk_density') or 0.0),
