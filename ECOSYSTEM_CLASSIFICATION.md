@@ -161,3 +161,4 @@ risk_adjusted_co2 = co2_20yr * adj_factor
 
 
 
+

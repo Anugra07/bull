@@ -88,10 +88,13 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
 
     geom = _ee_geometry_from_geojson(geojson)
     
-    # DEBUG: Verify coordinates
+    # DEBUG: Verify coordinates and extract latitude
+    latitude_deg = 0.0
     try:
-        centroid_debug = geom.centroid().coordinates().getInfo()
-        print(f"DEBUG: Geometry Centroid: {centroid_debug}")
+        centroid_coords = geom.centroid().coordinates().getInfo()
+        print(f"DEBUG: Geometry Centroid: {centroid_coords}")
+        if len(centroid_coords) > 1:
+            latitude_deg = float(centroid_coords[1])
     except Exception as e:
         print(f"DEBUG: Could not get centroid: {e}")
 
@@ -236,23 +239,89 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         print(f"DEBUG: Land Cover Error: {e}")
         land_cover_class_python = 0
     
+    # GEDI Bias Correction Function
+    # Research shows GEDI L4A underestimates biomass by -31.65 Mg/ha on average
+    # Worst in high-density tropical forests (>250 Mg/ha): 20-40% underestimation
+    def apply_gedi_bias_correction(raw_biomass: float, ecosystem: str, latitude: float) -> float:
+        """
+        Apply ecosystem-specific correction factors to GEDI L4A biomass estimates.
+        
+        Based on:
+        - Taylor & Francis: GEDI underestimation bias of -31.65 Mg/ha
+        - Frontiers: Errors range from 19% to 50% across sites
+        
+        Args:
+            raw_biomass: Raw GEDI L4A biomass (Mg/ha)
+            ecosystem: Ecosystem type (Forest, Grassland, etc.)
+            latitude: Absolute latitude for climate zone
+        
+        Returns:
+            Corrected biomass (Mg/ha)
+        """
+        if ecosystem != "Forest" and land_cover_class_python not in [10, 95]:
+            # No correction for non-forest ecosystems
+            return raw_biomass
+        
+        # Determine climate zone
+        abs_lat = abs(latitude)
+        if abs_lat <= 23.5:
+            # Tropical forests - highest correction needed
+            if raw_biomass > 250:
+                correction_factor = 1.35  # +35% for very high density
+            elif raw_biomass > 150:
+                correction_factor = 1.25  # +25% for high density
+            else:
+                correction_factor = 1.15  # +15% for moderate density
+        elif abs_lat <= 55:
+            # Temperate forests
+            if raw_biomass > 200:
+                correction_factor = 1.20  # +20% for high density
+            else:
+                correction_factor = 1.10  # +10% for moderate density
+        else:
+            # Boreal forests - minimal correction
+            correction_factor = 1.10  # +10%
+        
+        corrected = raw_biomass * correction_factor
+        print(f"DEBUG: GEDI Bias Correction: {raw_biomass:.1f} → {corrected:.1f} Mg/ha (factor: {correction_factor})")
+        return corrected
+    
     # Calculate biomass using GEDI AGB as primary source (most accurate)
     # GEDI provides direct Above Ground Biomass Density (AGBD) from LIDAR measurements
     biomass_python = 0.0
     biomass_method = "fallback"
+    biomass_raw_gedi = 0.0  # Store raw GEDI value for transparency
     
     # 1. PRIMARY METHOD: GEDI L4A Above Ground Biomass Density (AGBD) - Direct measurements
     # GEDI L4A provides footprint-level AGBD estimates in Mg/ha (t/ha)
     # This is the most accurate method as it's based on actual LIDAR measurements
+    gedi_quality_filtered = False
     try:
         # Try GEDI L4A monthly product (most recent data)
-        gedi_l4a = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002_MONTHLY') \
+        # NEW: Add quality filtering (NASA 2025: reduces >50% errors)
+        gedi_l4a_quality = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002_MONTHLY') \
             .filterBounds(geom) \
+            .filter(ee.Filter.eq('l4_quality_flag', 1)) \
             .select(['agbd'])  # Above Ground Biomass Density in Mg/ha
         
-        # Get collection size to check if data exists
-        gedi_count = gedi_l4a.size().getInfo()
-        print(f"DEBUG: GEDI L4A Monthly collection size: {gedi_count}")
+        # Get collection size to check if quality data exists
+        gedi_quality_count = gedi_l4a_quality.size().getInfo()
+        print(f"DEBUG: GEDI L4A Monthly (quality-filtered) collection size: {gedi_quality_count}")
+        
+        if gedi_quality_count > 0:
+            # Use quality-filtered data
+            gedi_l4a = gedi_l4a_quality
+            gedi_count = gedi_quality_count
+            gedi_quality_filtered = True
+            print(f"DEBUG: Using quality-filtered GEDI data ({gedi_count} shots)")
+        else:
+            # Fallback: Use all data if no quality shots available
+            print(f"DEBUG: No quality-filtered GEDI shots, falling back to all data")
+            gedi_l4a = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002_MONTHLY') \
+                .filterBounds(geom) \
+                .select(['agbd'])
+            gedi_count = gedi_l4a.size().getInfo()
+            print(f"DEBUG: GEDI L4A Monthly (unfiltered) collection size: {gedi_count}")
         
         if gedi_count > 0:
             # Use median to reduce noise from outliers, then compute mean over polygon
@@ -273,20 +342,43 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
             # Accept any positive GEDI value (GEDI is highly accurate, even low values are valid)
             if gedi_agb_python is not None and isinstance(gedi_agb_python, (int, float)):
                 if gedi_agb_python >= 0:  # Accept zero or positive values
-                    biomass_python = float(gedi_agb_python)
+                    biomass_raw_gedi = float(gedi_agb_python)
+                    # Apply bias correction for forests
+                    biomass_python = apply_gedi_bias_correction(
+                        biomass_raw_gedi, 
+                        "Forest" if land_cover_class_python in [10, 95] else "Other",
+                        latitude_deg
+                    )
                     biomass_method = "gedi_l4a_monthly"
-                    print(f"DEBUG: Using GEDI L4A Monthly biomass: {biomass_python} t/ha")
+                    print(f"DEBUG: Using GEDI L4A Monthly biomass: {biomass_python} t/ha (raw: {biomass_raw_gedi})")
                     
     except Exception as e:
         # If monthly product fails, try alternative approaches
         try:
-            # Alternative: Try GEDI L4A annual product
-            gedi_l4a_annual = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002') \
+            # Alternative: Try GEDI L4A annual product with quality filtering
+            gedi_l4a_annual_quality = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002') \
                 .filterBounds(geom) \
+                .filter(ee.Filter.eq('l4_quality_flag', 1)) \
                 .select(['agbd'])
             
-            gedi_count_annual = gedi_l4a_annual.size().getInfo()
-            print(f"DEBUG: GEDI L4A Annual collection size: {gedi_count_annual}")
+            gedi_quality_count_annual = gedi_l4a_annual_quality.size().getInfo()
+            print(f"DEBUG: GEDI L4A Annual (quality-filtered) collection size: {gedi_quality_count_annual}")
+            
+            if gedi_quality_count_annual > 0:
+                # Use quality-filtered data
+                gedi_l4a_annual = gedi_l4a_annual_quality
+                gedi_count_annual = gedi_quality_count_annual
+                gedi_quality_filtered = True
+                print(f"DEBUG: Using quality-filtered GEDI Annual data ({gedi_count_annual} shots)")
+            else:
+                # Fallback: Use all data
+                print(f"DEBUG: No quality-filtered GEDI Annual shots, falling back to all data")
+                gedi_l4a_annual = ee.ImageCollection('LARSE/GEDI/GEDI04_A_002') \
+                    .filterBounds(geom) \
+                    .select(['agbd'])
+                gedi_count_annual = gedi_l4a_annual.size().getInfo()
+                print(f"DEBUG: GEDI L4A Annual (unfiltered) collection size: {gedi_count_annual}")
+            
             if gedi_count_annual > 0:
                 agb_image = gedi_l4a_annual.median().rename('agb')
                 agb_result_dict = agb_image.reduceRegion(
@@ -300,9 +392,15 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
                 gedi_agb_python = agb_result_dict.get('agb')
                 print(f"DEBUG: GEDI L4A Annual AGBD raw value: {gedi_agb_python}")
                 if gedi_agb_python is not None and isinstance(gedi_agb_python, (int, float)) and gedi_agb_python >= 0:
-                    biomass_python = float(gedi_agb_python)
+                    biomass_raw_gedi = float(gedi_agb_python)
+                    # Apply bias correction
+                    biomass_python = apply_gedi_bias_correction(
+                        biomass_raw_gedi,
+                        "Forest" if land_cover_class_python in [10, 95] else "Other",
+                        latitude_deg
+                    )
                     biomass_method = "gedi_l4a_annual"
-                    print(f"DEBUG: Using GEDI L4A Annual biomass: {biomass_python} t/ha")
+                    print(f"DEBUG: Using GEDI L4A Annual biomass: {biomass_python} t/ha (raw: {biomass_raw_gedi})")
         except Exception as e:
             print(f"DEBUG: GEDI L4A Error: {e}")
         except Exception as e2:
@@ -402,8 +500,55 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
             biomass_method = "no_data"
             print(f"DEBUG: No biomass data available (no GEDI, no canopy height)")
     
+    # BELOWGROUND BIOMASS (BGB) - CRITICAL ADDITION
+    # Current model only calculates Above-Ground Biomass (AGB)
+    # Roots store 20-40% of total biomass and MUST be included for accurate carbon accounting
+    # Using IPCC 2019 Root-to-Shoot (R:S) ratios
+    
+    # Define IPCC 2019 Root-to-Shoot ratios
+    ROOT_SHOOT_RATIOS = {
+        'tropical': 0.24,
+        'temperate': 0.29,
+        'boreal': 0.32,
+        'grassland': 3.0,   # CRITICAL: Grasslands store most carbon in roots!
+        'shrubland': 0.40,
+        'mangrove': 0.39
+    }
+    
+    # Determine appropriate ratio based on ecosystem and climate zone
+    abs_lat = abs(latitude_deg)
+    
+    if land_cover_class_python == 95:  # Mangrove
+        root_shoot_ratio = ROOT_SHOOT_RATIOS['mangrove']
+    elif land_cover_class_python in [30, 90]:  # Grassland/Herbaceous
+        root_shoot_ratio = ROOT_SHOOT_RATIOS['grassland']
+    elif land_cover_class_python == 20:  # Shrubland
+        root_shoot_ratio = ROOT_SHOOT_RATIOS['shrubland']
+    elif land_cover_class_python == 10:  # Forest - climate dependent
+        if abs_lat > 55:
+            root_shoot_ratio = ROOT_SHOOT_RATIOS['boreal']
+        elif abs_lat > 23.5:
+            root_shoot_ratio = ROOT_SHOOT_RATIOS['temperate']
+        else:
+            root_shoot_ratio = ROOT_SHOOT_RATIOS['tropical']
+    else:
+        # Default to temperate for other land covers
+        root_shoot_ratio = ROOT_SHOOT_RATIOS['temperate']
+    
+    # Calculate Belowground Biomass
+    biomass_belowground = biomass_python * root_shoot_ratio
+    biomass_total = biomass_python + biomass_belowground
+    
+    print(f"DEBUG: Belowground Biomass: AGB={biomass_python:.1f} t/ha, BGB={biomass_belowground:.1f} t/ha (R:S={root_shoot_ratio}), Total={biomass_total:.1f} t/ha")
+    
     # Add biomass to metrics (convert to Earth Engine Number for dictionary)
-    metrics_dict['biomass'] = ee.Number(biomass_python)
+    metrics_dict['biomass'] = ee.Number(biomass_python)  # AGB only (for backward compatibility)
+    metrics_dict['biomass_aboveground'] = ee.Number(biomass_python)  # Explicit AGB
+    metrics_dict['biomass_belowground'] = ee.Number(biomass_belowground)  # NEW: BGB
+    metrics_dict['biomass_total'] = ee.Number(biomass_total)  # NEW: Total biomass
+    metrics_dict['root_shoot_ratio'] = ee.Number(root_shoot_ratio)  # For transparency
+    metrics_dict['biomass_method'] = ee.String(biomass_method)  # Track data source
+    metrics_dict['gedi_quality_filtered'] = ee.Number(1 if gedi_quality_filtered else 0)  # NEW: Quality flag
     metrics_dict['canopy_height'] = ee.Number(canopy_h_mean_python)
     metrics_dict['land_cover'] = ee.Number(land_cover_class_python)
     

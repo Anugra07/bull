@@ -10,3 +10,4 @@ COMMENT ON COLUMN public.project_results.land_cover IS 'ESA WorldCover class cod
 
 
 
+

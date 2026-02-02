@@ -139,12 +139,20 @@ def compute_carbon(
     if trend_loss is None:
         trend_loss = ecosystem_params["trend_loss"]
     
-    biomass = float(metrics.get("biomass", 0.0))
+    # Extract biomass components
+    # NEW: Use total biomass (AGB + BGB) for accurate carbon accounting
+    biomass_agb = float(metrics.get("biomass_aboveground", metrics.get("biomass", 0.0)))
+    biomass_bgb = float(metrics.get("biomass_belowground", 0.0))
+    biomass_total = float(metrics.get("biomass_total", biomass_agb))  # Fallback to AGB if total not available
+    
     soc_pct = float(metrics.get("soc", 0.0))
     bulk_density_raw = float(metrics.get("bulk_density", 0.0))
 
-    # Biomass carbon (tC/ha) - using 0.47 as carbon fraction of biomass
-    carbon_biomass_tc = biomass * 0.47  # tC/ha
+    # Biomass carbon (tC/ha) - using 0.47 as IPCC carbon fraction of biomass
+    # IMPORTANT: Now using TOTAL biomass (AGB + BGB) for accurate carbon stock
+    carbon_biomass_agb_tc = biomass_agb * 0.47  # Above-ground carbon (tC/ha)
+    carbon_biomass_bgb_tc = biomass_bgb * 0.47  # Below-ground carbon (tC/ha)
+    carbon_biomass_tc = biomass_total * 0.47    # Total biomass carbon (tC/ha)
 
     # SOC total across polygon
     # Pre-calculated in GEE analysis based on selected depth
@@ -227,7 +235,9 @@ def compute_carbon(
 
     return (
         {
-            "carbon_biomass": carbon_biomass_tc,
+            "carbon_biomass": carbon_biomass_tc,  # Total biomass carbon (tC/ha) - NOW INCLUDES BGB
+            "carbon_biomass_agb": carbon_biomass_agb_tc,  # NEW: Above-ground only (tC/ha)
+            "carbon_biomass_bgb": carbon_biomass_bgb_tc,  # NEW: Below-ground only (tC/ha)
             "carbon_biomass_total": carbon_biomass_total,  # NEW: Total Biomass Carbon (tC)
             "soc_total": soc_tC,  # store in tC
             "total_carbon_stock": total_carbon_stock,      # NEW: Total Carbon Stock (tC)
