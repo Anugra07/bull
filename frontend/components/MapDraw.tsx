@@ -62,7 +62,7 @@ function DrawControls({ onPolygon }: { onPolygon: (geojson: any) => void }) {
 
 export default function MapDraw({ onPolygon }: { onPolygon: (geojson: any) => void }) {
   return (
-    <div className="h-full w-full rounded-lg overflow-hidden shadow-sm border border-gray-200 bg-white">
+    <div className="h-full w-full rounded-xl overflow-hidden shadow-[var(--shadow-soft)] border-2 border-[var(--line)] bg-[var(--surface-strong)]">
       <MapContainer
         center={[20, 0]}
         zoom={2}

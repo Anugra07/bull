@@ -36,34 +36,35 @@ export default function NavBar() {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <nav className="border-b border-gray-200/60 bg-white/80 backdrop-blur-xl sticky top-0 z-50">
+    <nav className="sticky top-0 z-50 border-b-2 border-[var(--line-strong)] bg-[var(--surface)]/95 backdrop-blur-sm relative">
+      <div className="absolute inset-x-0 bottom-0 h-px bg-[var(--line)]" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gray-900 text-white font-semibold text-base">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-9 h-9 rounded-md border-2 border-[var(--accent-strong)] bg-[var(--accent)] text-white font-bold text-sm">
                 OG
               </div>
-              <span className="text-lg font-semibold text-gray-900">
+              <span className="text-base font-semibold tracking-wide text-[var(--ink)] uppercase">
                 Offset Guesser
               </span>
             </Link>
             {email && (
-              <div className="hidden md:flex items-center gap-1">
+              <div className="hidden md:flex items-center gap-2">
                 <Link
                   href="/dashboard"
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${isActive("/dashboard")
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold tracking-wide border-2 transition-colors ${isActive("/dashboard")
+                    ? "border-[var(--accent-strong)] bg-[var(--accent)] text-white"
+                    : "border-[var(--line)] text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-strong)]"
                     }`}
                 >
                   Dashboard
                 </Link>
                 <Link
                   href="/guide"
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${isActive("/guide")
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold tracking-wide border-2 transition-colors ${isActive("/guide")
+                    ? "border-[var(--accent-strong)] bg-[var(--accent)] text-white"
+                    : "border-[var(--line)] text-[var(--muted)] hover:text-[var(--ink)] hover:bg-[var(--surface-strong)]"
                     }`}
                 >
                   Methodology
@@ -74,27 +75,27 @@ export default function NavBar() {
           <div className="flex items-center gap-3">
             {email ? (
               <>
-                <div className="hidden sm:flex items-center gap-2 text-sm text-gray-600">
-                  <span className="max-w-[150px] truncate">{email}</span>
+                <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-[var(--muted)] border-2 border-[var(--line)] px-3 py-1 rounded-md bg-[var(--surface-strong)]">
+                  <span className="max-w-[170px] truncate">{email}</span>
                 </div>
                 <button
                   onClick={logout}
-                  className="px-4 py-2 rounded-xl bg-gray-100 text-gray-900 text-sm font-medium active:opacity-70"
+                  className="px-3 py-1.5 rounded-md border-2 border-[var(--line-strong)] bg-[var(--surface-strong)] text-[var(--ink)] text-xs font-semibold tracking-wide hover:bg-[var(--surface)]"
                 >
                   Logout
                 </button>
               </>
             ) : (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="px-4 py-2 rounded-xl text-gray-900 text-sm font-medium active:opacity-70"
+                  className="px-3 py-1.5 rounded-md border-2 border-[var(--line)] text-[var(--ink)] text-xs font-semibold tracking-wide hover:bg-[var(--surface-strong)]"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/signup"
-                  className="px-4 py-2 rounded-xl bg-gray-900 text-white text-sm font-medium active:opacity-80"
+                  className="px-3 py-1.5 rounded-md border-2 border-[var(--accent-strong)] bg-[var(--accent)] text-white text-xs font-semibold tracking-wide hover:bg-[var(--accent-strong)]"
                 >
                   Get Started
                 </Link>

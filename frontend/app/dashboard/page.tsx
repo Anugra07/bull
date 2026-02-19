@@ -57,7 +57,7 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (e: React.MouseEvent, projectId: string, projectName: string) => {
-    e.preventDefault(); // Prevent navigation
+    e.preventDefault();
     e.stopPropagation();
 
     if (!confirm(`Are you sure you want to delete project "${projectName}"? This action cannot be undone.`)) {
@@ -66,82 +66,77 @@ export default function Dashboard() {
 
     try {
       await api.deleteProject(projectId);
-      // Remove from state
-      setProjects(projects.filter(p => p.id !== projectId));
+      setProjects(projects.filter((p) => p.id !== projectId));
     } catch (err) {
       console.error(err);
       alert("Failed to delete project");
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F5F7]">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="h-12 w-12 bg-gray-200 rounded-full mb-4"></div>
-          <div className="h-4 w-32 bg-gray-200 rounded"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-3">
+          <div className="h-10 w-10 bg-[var(--line)] rounded-md" />
+          <div className="h-3 w-36 bg-[var(--line)] rounded" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7] font-sans text-gray-900">
-      <main className="max-w-5xl mx-auto px-6 py-12">
-        {/* Actions */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold tracking-tight">My Projects</h1>
-          <Button onClick={handleCreate} className="shadow-lg shadow-gray-900/20 pl-4 pr-5">
-            <Plus className="w-5 h-5 mr-2" />
-            New Project
-          </Button>
-        </div>
-
-        {/* Project Grid */}
-        {projects.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-              <FolderOpen className="w-8 h-8" />
+    <div className="min-h-screen text-[var(--ink)]">
+      <main className="max-w-6xl mx-auto px-6 py-10 section-fade">
+        <Card className="p-6 md:p-8 mb-8 bg-[var(--surface)]">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold">Project Workspace</h1>
+              <p className="text-[var(--muted)] mt-1 text-sm">Manage parcels, run analyses, and review carbon outcomes.</p>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No projects yet</h3>
-            <p className="text-gray-500 mb-6">Create your first project to start analyzing.</p>
-            <Button onClick={handleCreate} variant="secondary">
-              Create Project
+            <Button onClick={handleCreate} className="w-full md:w-auto">
+              <Plus className="w-4 h-4 mr-2" />
+              New Project
             </Button>
           </div>
+        </Card>
+
+        {projects.length === 0 ? (
+          <Card className="text-center py-16 px-6">
+            <div className="w-14 h-14 mx-auto border-2 border-[var(--line-strong)] rounded-md flex items-center justify-center text-[var(--muted)] bg-[var(--surface)] mb-4">
+              <FolderOpen className="w-7 h-7" />
+            </div>
+            <h3 className="text-xl font-semibold text-[var(--ink)] mb-2">No projects yet</h3>
+            <p className="text-[var(--muted)] mb-6 text-sm">Create your first workspace to start carbon analysis.</p>
+            <Button onClick={handleCreate} variant="secondary">Create Project</Button>
+          </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {projects.map((project) => (
               <Link key={project.id} href={`/projects/${project.id}`} className="group block">
-                <Card className="h-full p-6 transition-all duration-300 hover:shadow-md hover:-translate-y-1 group-hover:border-gray-200 relative">
+                <Card className="h-full p-5 transition-transform duration-200 hover:-translate-y-0.5">
                   <div className="flex flex-col h-full justify-between">
                     <div>
                       <div className="flex justify-between items-start mb-4">
-                        <div className="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-900 group-hover:bg-gray-900 group-hover:text-white transition-colors">
+                        <div className="w-10 h-10 border-2 border-[var(--line)] rounded-md flex items-center justify-center text-[var(--ink)] bg-[var(--surface)]">
                           <FolderOpen className="w-5 h-5" />
                         </div>
                         <button
                           onClick={(e) => handleDelete(e, project.id, project.name)}
-                          className="text-gray-400 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
+                          className="text-[var(--muted)] hover:text-red-700 p-1 rounded-md border border-transparent hover:border-red-300"
                           title="Delete Project"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                      <h3 className="text-lg font-semibold text-[var(--ink)] mb-2 line-clamp-1">
                         {project.name}
                       </h3>
-                      <p className="text-sm text-gray-500 line-clamp-2">
+                      <p className="text-sm text-[var(--muted)] line-clamp-2">
                         {project.description || "No description provided."}
                       </p>
                     </div>
 
-                    <div className="mt-6 flex items-center text-sm font-medium text-gray-400 group-hover:text-gray-900 transition-colors">
+                    <div className="mt-6 flex items-center text-sm font-semibold text-[var(--accent)]">
                       Open Project
                       <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" />
                     </div>

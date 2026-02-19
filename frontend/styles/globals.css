@@ -4,12 +4,76 @@
 
 html, body, #__next { height: 100%; }
 
+:root {
+  --bg: #ecebe3;
+  --surface: #f7f6ef;
+  --surface-strong: #ffffff;
+  --ink: #1d2b23;
+  --muted: #526157;
+  --line: #c4c8ba;
+  --line-strong: #9fa593;
+  --accent: #1c6b4f;
+  --accent-strong: #0f5139;
+  --warn: #9f5e1d;
+  --shadow-soft: 0 10px 24px rgba(29, 43, 35, 0.07);
+  --font-heading: "Space Grotesk", "Avenir Next Condensed", "Gill Sans Nova", sans-serif;
+  --font-body: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", "Menlo", monospace;
+}
+
 body {
-  color: rgb(var(--foreground-rgb));
-  background: #F5F5F7;
+  color: var(--ink);
+  background: radial-gradient(circle at 10% 10%, #f2f0e8 0%, transparent 45%),
+    radial-gradient(circle at 95% 90%, #e5e4da 0%, transparent 38%),
+    linear-gradient(180deg, #ecebe3 0%, #e8e8df 100%);
+  font-family: var(--font-body), sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04";
   -webkit-font-smoothing: antialiased;
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), sans-serif;
+  letter-spacing: -0.02em;
+}
+
+code, pre {
+  font-family: var(--font-mono), monospace;
+}
+
+.app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(159, 165, 147, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(159, 165, 147, 0.12) 1px, transparent 1px);
+  background-size: 34px 34px;
+  opacity: 0.35;
+  z-index: 0;
+}
+
+.section-fade {
+  animation: sectionFade 420ms ease both;
+}
+
+@keyframes sectionFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Leaflet styles */
 .leaflet-container { height: 100%; width: 100%; }
+
+.leaflet-control-attribution,
+.leaflet-control-zoom a {
+  background: var(--surface-strong) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+}

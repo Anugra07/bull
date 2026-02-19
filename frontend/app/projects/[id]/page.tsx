@@ -256,22 +256,22 @@ export default function ProjectPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-600">Loading project...</p>
+          <div className="inline-block h-8 w-8 border-2 border-gray-300 border-t-gray-900 rounded-md animate-spin mb-4"></div>
+          <p className="text-[var(--muted)]">Loading project...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pb-12 font-sans text-gray-900">
+    <div className="min-h-screen pb-12 font-sans text-[var(--ink)]">
       {/* Project Controls Bar */}
-      <div className="sticky top-16 z-20 bg-[#F5F5F7]/95 backdrop-blur-sm border-b border-gray-200/50">
+      <div className="sticky top-16 z-20 bg-[var(--surface)]/95 backdrop-blur-sm border-b border-[var(--line)]">
         <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push("/dashboard")}
-              className="p-2 -ml-2 rounded-full hover:bg-gray-200/50 transition-colors text-gray-500"
+              className="p-2 -ml-2 rounded-md hover:bg-gray-200/50 transition-colors text-[var(--muted)]"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -285,13 +285,13 @@ export default function ProjectPage() {
               <select
                 value={soilDepth}
                 onChange={(e) => setSoilDepth(e.target.value)}
-                className="appearance-none bg-white pl-4 pr-10 py-2 rounded-full text-sm font-medium shadow-sm border border-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+                className="appearance-none bg-[var(--surface-strong)] pl-4 pr-10 py-2 rounded-md text-sm font-medium shadow-sm border border-[var(--line)] focus:outline-none focus:ring-2 focus:ring-gray-200 cursor-pointer hover:bg-[var(--surface)] transition-colors"
               >
                 <option value="0-30cm">0-30 cm Depth</option>
                 <option value="0-100cm">0-100 cm Depth</option>
                 <option value="0-200cm">0-200 cm Depth</option>
               </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--muted)]">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
               </div>
             </div>
@@ -336,9 +336,9 @@ export default function ProjectPage() {
               </div>
 
               {/* Floating Status Pill */}
-              <div className="absolute top-6 left-6 bg-white/90 backdrop-blur shadow-sm border border-gray-100 px-4 py-2 rounded-full flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${polygon ? 'bg-green-500' : 'bg-amber-500'}`} />
-                <span className="text-xs font-semibold text-gray-600">
+              <div className="absolute top-6 left-6 bg-[var(--surface-strong)] backdrop-blur shadow-sm border border-[var(--line)] px-4 py-2 rounded-md flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-md ${polygon ? 'bg-green-500' : 'bg-amber-500'}`} />
+                <span className="text-xs font-semibold text-[var(--muted)]">
                   {polygon ? "Area Selected" : "Draw Polygon"}
                 </span>
               </div>
@@ -348,8 +348,8 @@ export default function ProjectPage() {
             {metrics && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Environmental Metrics</h2>
-                  <span className="text-sm text-gray-500">Based on satellite analysis</span>
+                  <h2 className="text-xl font-semibold text-[var(--ink)]">Environmental Metrics</h2>
+                  <span className="text-sm text-[var(--muted)]">Based on satellite analysis</span>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -369,8 +369,8 @@ export default function ProjectPage() {
             {compute && (
               <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Total Carbon Stock</h2>
-                  <span className="text-sm text-gray-500">Biomass + Soil Organic Carbon</span>
+                  <h2 className="text-xl font-semibold text-[var(--ink)]">Total Carbon Stock</h2>
+                  <span className="text-sm text-[var(--muted)]">Biomass + Soil Organic Carbon</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -379,9 +379,9 @@ export default function ProjectPage() {
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide mb-1">Total Carbon Stock</h3>
-                        <p className="text-xs text-gray-400">Combined ecosystem storage</p>
+                        <p className="text-xs text-[var(--muted)]">Combined ecosystem storage</p>
                       </div>
-                      <div className="p-2 bg-white/10 rounded-lg">
+                      <div className="p-2 bg-[var(--surface-strong)]/10 rounded-lg">
                         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                       </div>
                     </div>
@@ -392,37 +392,37 @@ export default function ProjectPage() {
                   </Card>
 
                   {/* Biomass Carbon */}
-                  <Card className="p-6 bg-white border border-gray-100 shadow-sm">
+                  <Card className="p-6 bg-[var(--surface-strong)] border border-[var(--line)] shadow-sm">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Biomass Carbon</h3>
-                        <p className="text-xs text-gray-500">Above & below ground vegetation</p>
+                        <h3 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wide mb-1">Biomass Carbon</h3>
+                        <p className="text-xs text-[var(--muted)]">Above & below ground vegetation</p>
                       </div>
                       <div className="p-2 bg-green-50 rounded-lg">
                         <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
                       </div>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-2">
+                    <div className="text-3xl font-bold text-[var(--ink)] mb-2">
                       {(compute.carbon_biomass ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </div>
-                    <div className="text-sm text-gray-500">tC ({(compute.carbon_biomass ?? 0).toFixed(1)} tC/ha)</div>
+                    <div className="text-sm text-[var(--muted)]">tC ({(compute.carbon_biomass ?? 0).toFixed(1)} tC/ha)</div>
                   </Card>
 
                   {/* Soil Organic Carbon */}
-                  <Card className="p-6 bg-white border border-gray-100 shadow-sm">
+                  <Card className="p-6 bg-[var(--surface-strong)] border border-[var(--line)] shadow-sm">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Soil Organic Carbon</h3>
-                        <p className="text-xs text-gray-500">Stored in soil (0-{soilDepth.replace("0-", "")})</p>
+                        <h3 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wide mb-1">Soil Organic Carbon</h3>
+                        <p className="text-xs text-[var(--muted)]">Stored in soil (0-{soilDepth.replace("0-", "")})</p>
                       </div>
                       <div className="p-2 bg-amber-50 rounded-lg">
                         <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
                       </div>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-2">
+                    <div className="text-3xl font-bold text-[var(--ink)] mb-2">
                       {(compute.soc_total ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </div>
-                    <div className="text-sm text-gray-500">tC ({(metrics?.soc ?? 0).toFixed(1)} tC/ha)</div>
+                    <div className="text-sm text-[var(--muted)]">tC ({(metrics?.soc ?? 0).toFixed(1)} tC/ha)</div>
                   </Card>
                 </div>
               </div>
@@ -432,8 +432,8 @@ export default function ProjectPage() {
             {metrics && (
               <div className="animate-in fade-in slide-in-from-bottom-6 duration-700 delay-75">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Trends &amp; Risk Indicators</h2>
-                  <span className="text-sm text-gray-500">5-year analysis (2020-2024)</span>
+                  <h2 className="text-xl font-semibold text-[var(--ink)]">Trends &amp; Risk Indicators</h2>
+                  <span className="text-sm text-[var(--muted)]">5-year analysis (2020-2024)</span>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -441,10 +441,10 @@ export default function ProjectPage() {
                   <Card className="p-6 bg-gradient-to-br from-white to-gray-50/50">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">NDVI Trend</h3>
-                        <p className="text-xs text-gray-500">Vegetation change over time</p>
+                        <h3 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wide mb-1">NDVI Trend</h3>
+                        <p className="text-xs text-[var(--muted)]">Vegetation change over time</p>
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-semibold ${metrics.ndvi_trend_interpretation === 'Degrading' ? 'bg-red-100 text-red-700' :
+                      <div className={`px-3 py-1 rounded-md text-xs font-semibold ${metrics.ndvi_trend_interpretation === 'Degrading' ? 'bg-red-100 text-red-700' :
                         metrics.ndvi_trend_interpretation === 'Improving' ? 'bg-green-100 text-green-700' :
                           'bg-gray-100 text-gray-700'
                         }`}>
@@ -453,40 +453,40 @@ export default function ProjectPage() {
                             '→ Stable'}
                       </div>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                    <div className="text-3xl font-bold text-[var(--ink)] mb-1">
                       {metrics.ndvi_trend.toFixed(4)}
                     </div>
-                    <div className="text-sm text-gray-500">units/year</div>
+                    <div className="text-sm text-[var(--muted)]">units/year</div>
                   </Card>
 
                   {/* Fire History */}
                   <Card className="p-6 bg-gradient-to-br from-white to-gray-50/50">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Fire History</h3>
-                        <p className="text-xs text-gray-500">Burned area detection</p>
+                        <h3 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wide mb-1">Fire History</h3>
+                        <p className="text-xs text-[var(--muted)]">Burned area detection</p>
                       </div>
                       {metrics.fire_recent_burn && (
-                        <div className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 flex items-center gap-1">
+                        <div className="px-3 py-1 rounded-md text-xs font-semibold bg-orange-100 text-orange-700 flex items-center gap-1">
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                           Recent Burn
                         </div>
                       )}
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                    <div className="text-3xl font-bold text-[var(--ink)] mb-1">
                       {metrics.fire_burn_percent.toFixed(1)}%
                     </div>
-                    <div className="text-sm text-gray-500">of area burned (5 years)</div>
+                    <div className="text-sm text-[var(--muted)]">of area burned (5 years)</div>
                   </Card>
 
                   {/* Rainfall Anomaly */}
                   <Card className="p-6 bg-gradient-to-br from-white to-gray-50/50">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Rainfall Pattern</h3>
-                        <p className="text-xs text-gray-500">vs. long-term average</p>
+                        <h3 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wide mb-1">Rainfall Pattern</h3>
+                        <p className="text-xs text-[var(--muted)]">vs. long-term average</p>
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-xs font-semibold ${metrics.rainfall_anomaly_percent < -20 ? 'bg-amber-100 text-amber-700' :
+                      <div className={`px-3 py-1 rounded-md text-xs font-semibold ${metrics.rainfall_anomaly_percent < -20 ? 'bg-amber-100 text-amber-700' :
                         metrics.rainfall_anomaly_percent > 20 ? 'bg-blue-100 text-blue-700' :
                           'bg-gray-100 text-gray-700'
                         }`}>
@@ -495,18 +495,18 @@ export default function ProjectPage() {
                             'Normal'}
                       </div>
                     </div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                    <div className="text-3xl font-bold text-[var(--ink)] mb-1">
                       {metrics.rainfall_anomaly_percent > 0 ? '+' : ''}{metrics.rainfall_anomaly_percent.toFixed(1)}%
                     </div>
-                    <div className="text-sm text-gray-500">anomaly from baseline</div>
+                    <div className="text-sm text-[var(--muted)]">anomaly from baseline</div>
                   </Card>
 
                   {/* Overall Trend Classification */}
                   <Card className="p-6 bg-gradient-to-br from-white to-gray-50/50">
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Overall Trend</h3>
-                        <p className="text-xs text-gray-500">Combined assessment</p>
+                        <h3 className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wide mb-1">Overall Trend</h3>
+                        <p className="text-xs text-[var(--muted)]">Combined assessment</p>
                       </div>
                     </div>
                     <div className={`inline-block px-4 py-2 rounded-xl text-xl font-bold mb-2 ${metrics.trend_classification.includes('Degrading') || metrics.trend_classification.includes('Fire-Impacted') || metrics.trend_classification.includes('Drought')
@@ -519,7 +519,7 @@ export default function ProjectPage() {
                       }`}>
                       {metrics.trend_classification}
                     </div>
-                    <div className="text-sm text-gray-500">Based on multi-indicator analysis</div>
+                    <div className="text-sm text-[var(--muted)]">Based on multi-indicator analysis</div>
                   </Card>
                 </div>
               </div>
@@ -528,34 +528,34 @@ export default function ProjectPage() {
             {/*Carbon Estimates */}
             {compute && (
               <div className="animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Carbon Offset Potential</h2>
+                <h2 className="text-xl font-semibold text-[var(--ink)] mb-6">Carbon Offset Potential</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <Card className="p-6 flex flex-col justify-between bg-gradient-to-br from-gray-900 to-gray-800 text-white border-none shadow-xl shadow-gray-900/10">
                     <div>
-                      <div className="text-gray-400 text-sm font-medium mb-1">Risk-Adjusted CO₂</div>
+                      <div className="text-[var(--muted)] text-sm font-medium mb-1">Risk-Adjusted CO₂</div>
                       <div className="text-4xl font-bold tracking-tight">{(compute.risk_adjusted_co2 ?? 0).toFixed(0)}</div>
-                      <div className="text-gray-400 text-sm mt-1">tCO₂e (20yr)</div>
+                      <div className="text-[var(--muted)] text-sm mt-1">tCO₂e (20yr)</div>
                     </div>
                     <div className="mt-8 pt-6 border-t border-white/10">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Ecosystem</span>
+                        <span className="text-[var(--muted)]">Ecosystem</span>
                         <span className="font-medium">{getEcosystemName(compute.ecosystem_type)}</span>
                       </div>
                     </div>
                   </Card>
 
                   <Card className="p-6 flex flex-col justify-center">
-                    <div className="text-gray-500 text-sm font-medium mb-1">Total Carbon Stock</div>
-                    <div className="text-3xl font-bold text-gray-900">
+                    <div className="text-[var(--muted)] text-sm font-medium mb-1">Total Carbon Stock</div>
+                    <div className="text-3xl font-bold text-[var(--ink)]">
                       {((compute.carbon_biomass ?? 0) + (compute.soc_total ?? 0)).toFixed(0)}
                     </div>
-                    <div className="text-gray-400 text-sm mt-1">tC (Biomass + SOC)</div>
+                    <div className="text-[var(--muted)] text-sm mt-1">tC (Biomass + SOC)</div>
                   </Card>
 
                   <Card className="p-6 flex flex-col justify-center">
-                    <div className="text-gray-500 text-sm font-medium mb-1">Annual Sequestration</div>
-                    <div className="text-3xl font-bold text-gray-900">{(compute.annual_co2 ?? 0).toFixed(1)}</div>
-                    <div className="text-gray-400 text-sm mt-1">tCO₂e / year</div>
+                    <div className="text-[var(--muted)] text-sm font-medium mb-1">Annual Sequestration</div>
+                    <div className="text-3xl font-bold text-[var(--ink)]">{(compute.annual_co2 ?? 0).toFixed(1)}</div>
+                    <div className="text-[var(--muted)] text-sm mt-1">tCO₂e / year</div>
                   </Card>
                 </div>
               </div>
@@ -565,8 +565,8 @@ export default function ProjectPage() {
             {compute && compute.baseline_scenario && (
               <div className="animate-in fade-in slide-in-from-bottom-10 duration-700 delay-150">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Carbon Credits (MRV Baseline)</h2>
-                  <span className="text-sm text-gray-500 px-3 py-1 bg-gray-100 rounded-full">
+                  <h2 className="text-xl font-semibold text-[var(--ink)]">Carbon Credits (MRV Baseline)</h2>
+                  <span className="text-sm text-[var(--muted)] px-3 py-1 bg-gray-100 rounded-md">
                     Baseline: {compute.baseline_scenario}
                   </span>
                 </div>
@@ -575,15 +575,15 @@ export default function ProjectPage() {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     {/* Headers */}
                     <div className="text-center">
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Metric</div>
+                      <div className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Metric</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Baseline (BAU)</div>
-                      <div className="text-xs text-gray-400 mt-1">Without Project</div>
+                      <div className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Baseline (BAU)</div>
+                      <div className="text-xs text-[var(--muted)] mt-1">Without Project</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Project</div>
-                      <div className="text-xs text-gray-400 mt-1">With Intervention</div>
+                      <div className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Project</div>
+                      <div className="text-xs text-[var(--muted)] mt-1">With Intervention</div>
                     </div>
                     <div className="text-center">
                       <div className="text-xs font-semibold text-green-600 uppercase tracking-wider">Additionality</div>
@@ -595,10 +595,10 @@ export default function ProjectPage() {
                       <div className="text-sm font-medium text-gray-700">Annual CO₂</div>
                     </div>
                     <div className="text-center p-3 bg-gray-100/50 rounded-xl">
-                      <div className="text-2xl font-bold text-gray-600">
+                      <div className="text-2xl font-bold text-[var(--muted)]">
                         {(compute.baseline_annual_co2 ?? 0).toFixed(1)}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">tCO₂e/yr</div>
+                      <div className="text-xs text-[var(--muted)] mt-1">tCO₂e/yr</div>
                     </div>
                     <div className="text-center p-3 bg-green-100/50 rounded-xl border border-green-200/30">
                       <div className="text-2xl font-bold text-green-700">
@@ -618,10 +618,10 @@ export default function ProjectPage() {
                       <div className="text-sm font-medium text-gray-700">20-Year Total</div>
                     </div>
                     <div className="text-center p-3 bg-gray-100/50 rounded-xl">
-                      <div className="text-2xl font-bold text-gray-600">
+                      <div className="text-2xl font-bold text-[var(--muted)]">
                         {(compute.baseline_co2_20yr ?? 0).toFixed(0)}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">tCO₂e</div>
+                      <div className="text-xs text-[var(--muted)] mt-1">tCO₂e</div>
                     </div>
                     <div className="text-center p-3 bg-green-100/50 rounded-xl border border-green-200/30">
                       <div className="text-2xl font-bold text-green-700">
@@ -638,13 +638,13 @@ export default function ProjectPage() {
                   </div>
 
                   {/* Explanation */}
-                  <div className="mt-6 p-4 bg-white/60 rounded-xl border border-gray-200/50">
+                  <div className="mt-6 p-4 bg-[var(--surface)] rounded-xl border border-[var(--line)]">
                     <div className="flex items-start gap-3">
                       <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
-                      <div className="text-sm text-gray-600">
-                        <strong className="font-semibold text-gray-900">Additionality</strong> represents carbon sequestration
+                      <div className="text-sm text-[var(--muted)]">
+                        <strong className="font-semibold text-[var(--ink)]">Additionality</strong> represents carbon sequestration
                         that <strong>wouldn't occur</strong> without your project. This is calculated by comparing the
                         <strong className="text-green-600"> project scenario</strong> (with intervention) against the
                         <strong className="text-gray-700"> baseline scenario</strong> ({compute.baseline_scenario?.toLowerCase()}).
@@ -659,21 +659,21 @@ export default function ProjectPage() {
             {/* Data Quality & Accuracy (QA/QC) */}
             {compute && compute.data_confidence_score !== undefined && (
               <div className="animate-in fade-in slide-in-from-bottom-12 duration-700 delay-200">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Data Quality & Accuracy</h2>
+                <h2 className="text-xl font-semibold text-[var(--ink)] mb-6">Data Quality & Accuracy</h2>
 
                 <Card className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     {/* Confidence Score - Large Display */}
                     <div className="md:col-span-4 text-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-200/50">
-                      <div className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-2">Overall Confidence Score</div>
+                      <div className="text-sm font-semibold text-[var(--muted)] uppercase tracking-wider mb-2">Overall Confidence Score</div>
                       <div className={`text-6xl font-bold mb-2 ${(compute.data_confidence_score ?? 0) >= 80 ? 'text-green-600' :
                         (compute.data_confidence_score ?? 0) >= 60 ? 'text-yellow-600' :
                           'text-red-600'
                         }`}>
                         {(compute.data_confidence_score ?? 0).toFixed(0)}
                       </div>
-                      <div className="text-sm text-gray-500">out of 100</div>
-                      <div className="mt-4 text-xs text-gray-600">
+                      <div className="text-sm text-[var(--muted)]">out of 100</div>
+                      <div className="mt-4 text-xs text-[var(--muted)]">
                         {(compute.data_confidence_score ?? 0) >= 80 && '✓ High confidence - Excellent data quality'}
                         {(compute.data_confidence_score ?? 0) >= 60 && (compute.data_confidence_score ?? 0) < 80 && '⚠ Moderate confidence - Good data quality'}
                         {(compute.data_confidence_score ?? 0) < 60 && '⚠ Low confidence - Limited data quality'}
@@ -681,62 +681,62 @@ export default function ProjectPage() {
                     </div>
 
                     {/* Cloud Coverage */}
-                    <Card className="p-4 flex flex-col justify-center bg-white">
+                    <Card className="p-4 flex flex-col justify-center bg-[var(--surface-strong)]">
                       <div className="flex items-center gap-3 mb-2">
-                        <svg className="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-5 h-5 text-[var(--muted)]" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z" />
                         </svg>
-                        <div className="text-sm font-medium text-gray-500">Cloud Coverage</div>
+                        <div className="text-sm font-medium text-[var(--muted)]">Cloud Coverage</div>
                       </div>
-                      <div className="text-2xl font-bold text-gray-900">{(compute.cloud_coverage_percent ?? 0).toFixed(1)}%</div>
-                      <div className="text-xs text-gray-400 mt-1">Sentinel-2 scenes</div>
+                      <div className="text-2xl font-bold text-[var(--ink)]">{(compute.cloud_coverage_percent ?? 0).toFixed(1)}%</div>
+                      <div className="text-xs text-[var(--muted)] mt-1">Sentinel-2 scenes</div>
                     </Card>
 
                     {/* GEDI Shots */}
-                    <Card className="p-4 flex flex-col justify-center bg-white">
+                    <Card className="p-4 flex flex-col justify-center bg-[var(--surface-strong)]">
                       <div className="flex items-center gap-3 mb-2">
                         <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                         </svg>
-                        <div className="text-sm font-medium text-gray-500">GEDI Shots</div>
+                        <div className="text-sm font-medium text-[var(--muted)]">GEDI Shots</div>
                       </div>
-                      <div className="text-2xl font-bold text-gray-900">{compute.gedi_shot_count ?? 0}</div>
-                      <div className="text-xs text-gray-400 mt-1">Lidar measurements</div>
+                      <div className="text-2xl font-bold text-[var(--ink)]">{compute.gedi_shot_count ?? 0}</div>
+                      <div className="text-xs text-[var(--muted)] mt-1">Lidar measurements</div>
                     </Card>
 
                     {/* Pixel Count */}
-                    <Card className="p-4 flex flex-col justify-center bg-white">
+                    <Card className="p-4 flex flex-col justify-center bg-[var(--surface-strong)]">
                       <div className="flex items-center gap-3 mb-2">
                         <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                         </svg>
-                        <div className="text-sm font-medium text-gray-500">Valid Pixels</div>
+                        <div className="text-sm font-medium text-[var(--muted)]">Valid Pixels</div>
                       </div>
-                      <div className="text-2xl font-bold text-gray-900">{(compute.pixel_count ?? 0).toLocaleString()}</div>
-                      <div className="text-xs text-gray-400 mt-1">Data points analyzed</div>
+                      <div className="text-2xl font-bold text-[var(--ink)]">{(compute.pixel_count ?? 0).toLocaleString()}</div>
+                      <div className="text-xs text-[var(--muted)] mt-1">Data points analyzed</div>
                     </Card>
 
                     {/* Variability (StdDev) */}
-                    <Card className="p-4 flex flex-col justify-center bg-white">
+                    <Card className="p-4 flex flex-col justify-center bg-[var(--surface-strong)]">
                       <div className="flex items-center gap-3 mb-2">
                         <svg className="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
                         </svg>
-                        <div className="text-sm font-medium text-gray-500">NDVI Variability</div>
+                        <div className="text-sm font-medium text-[var(--muted)]">NDVI Variability</div>
                       </div>
-                      <div className="text-2xl font-bold text-gray-900">{(compute.ndvi_stddev ?? 0).toFixed(3)}</div>
-                      <div className="text-xs text-gray-400 mt-1">Standard deviation</div>
+                      <div className="text-2xl font-bold text-[var(--ink)]">{(compute.ndvi_stddev ?? 0).toFixed(3)}</div>
+                      <div className="text-xs text-[var(--muted)] mt-1">Standard deviation</div>
                     </Card>
                   </div>
 
                   {/* Explanation */}
-                  <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200/50">
+                  <div className="mt-6 p-4 bg-[var(--surface)] rounded-xl border border-[var(--line)]">
                     <div className="flex items-start gap-3">
                       <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                       </svg>
-                      <div className="text-sm text-gray-600">
-                        <strong className="font-semibold text-gray-900">Quality Indicators:</strong> The confidence score reflects data availability and reliability.
+                      <div className="text-sm text-[var(--muted)]">
+                        <strong className="font-semibold text-[var(--ink)]">Quality Indicators:</strong> The confidence score reflects data availability and reliability.
                         High pixel counts, low cloud coverage, and GEDI measurements increase confidence.
                         Variability (StdDev) indicates spatial heterogeneity in the analyzed area.
                       </div>
@@ -750,17 +750,17 @@ export default function ProjectPage() {
           {/* Sidebar: Tools & Upload */}
           <div className="lg:col-span-4 space-y-6">
             <Card className="p-6">
-              <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Tools</h3>
+              <h3 className="text-sm font-semibold text-[var(--ink)] uppercase tracking-wider mb-4">Tools</h3>
               <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                  <div className="text-sm font-medium text-gray-900 mb-2">Polygon Data</div>
-                  <div className="font-mono text-xs text-gray-500 bg-white p-3 rounded-xl border border-gray-100 overflow-hidden text-ellipsis h-24">
+                <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--line)]">
+                  <div className="text-sm font-medium text-[var(--ink)] mb-2">Polygon Data</div>
+                  <div className="font-mono text-xs text-[var(--muted)] bg-[var(--surface-strong)] p-3 rounded-xl border border-[var(--line)] overflow-hidden text-ellipsis h-24">
                     {polygon ? JSON.stringify(polygon.geometry || polygon) : "No polygon selected"}
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                  <div className="text-sm font-medium text-gray-900 mb-2">Upload Geometry</div>
+                <div className="p-4 rounded-2xl bg-[var(--surface)] border border-[var(--line)]">
+                  <div className="text-sm font-medium text-[var(--ink)] mb-2">Upload Geometry</div>
                   <FileUpload onGeoJSON={onPolygon} />
                 </div>
               </div>
@@ -775,13 +775,13 @@ export default function ProjectPage() {
 
 function MetricCardMinimal({ title, value, unit, sub, color }: { title: string, value: string, unit: string, sub?: string, color: string }) {
   return (
-    <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100/50 flex flex-col items-start hover:shadow-md transition-shadow">
-      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-auto">{title}</span>
+    <div className="bg-[var(--surface-strong)] p-5 rounded-2xl shadow-sm border border-[var(--line)] flex flex-col items-start hover:shadow-md transition-shadow">
+      <span className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wide mb-auto">{title}</span>
       <div className="mt-2">
-        <span className="text-2xl font-bold text-gray-900 tracking-tight">{value}</span>
-        <span className="text-xs text-gray-400 ml-1 font-medium">{unit}</span>
+        <span className="text-2xl font-bold text-[var(--ink)] tracking-tight">{value}</span>
+        <span className="text-xs text-[var(--muted)] ml-1 font-medium">{unit}</span>
       </div>
-      {sub && <span className="text-[10px] text-gray-400 font-medium mt-1 bg-gray-50 px-2 py-0.5 rounded-full">{sub}</span>}
+      {sub && <span className="text-[10px] text-[var(--muted)] font-medium mt-1 bg-[var(--surface)] px-2 py-0.5 rounded-md">{sub}</span>}
     </div>
   );
 }

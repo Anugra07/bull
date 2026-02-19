@@ -1,202 +1,181 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, BookOpen, Satellite, Calculator, AlertTriangle, Leaf, Layers, Droplets } from "lucide-react";
+import type { ReactNode } from "react";
+import { BookOpen, Satellite, Calculator, AlertTriangle, Leaf, Layers, Droplets } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
 
 export default function GuidePage() {
-    const router = useRouter();
-    const [activeSection, setActiveSection] = useState("overview");
+  const [activeSection, setActiveSection] = useState("overview");
 
-    const sections = [
-        { id: "overview", label: "Overview", icon: BookOpen },
-        { id: "data-sources", label: "Data Sources", icon: Satellite },
-        { id: "carbon-logic", label: "Carbon Logic", icon: Calculator },
-        { id: "risk-factors", label: "Risk Factors", icon: AlertTriangle },
-    ];
+  const sections = [
+    { id: "overview", label: "Overview", icon: BookOpen },
+    { id: "data-sources", label: "Data Sources", icon: Satellite },
+    { id: "carbon-logic", label: "Carbon Logic", icon: Calculator },
+    { id: "risk-factors", label: "Risk Factors", icon: AlertTriangle },
+  ];
 
-    const scrollToSection = (id: string) => {
-        setActiveSection(id);
-        const element = document.getElementById(id);
-        if (element) {
-            element.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-    };
+  const scrollToSection = (id: string) => {
+    setActiveSection(id);
+    const element = document.getElementById(id);
+    if (element) element.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
-    return (
-        <div className="min-h-screen bg-[#F5F5F7] font-sans text-gray-900 flex flex-col pt-6">
-            <div className="flex-1 max-w-7xl mx-auto w-full px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Sidebar Navigation */}
-                <div className="hidden lg:block lg:col-span-3">
-                    <div className="sticky top-24 space-y-2">
-                        {sections.map((section) => (
-                            <button
-                                key={section.id}
-                                onClick={() => scrollToSection(section.id)}
-                                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeSection === section.id
-                                    ? "bg-white text-gray-900 shadow-sm"
-                                    : "text-gray-500 hover:bg-white/50 hover:text-gray-700"
-                                    }`}
-                            >
-                                <section.icon className={`w-4 h-4 ${activeSection === section.id ? "text-blue-600" : "text-gray-400"}`} />
-                                {section.label}
-                            </button>
-                        ))}
-                    </div>
+  return (
+    <div className="min-h-screen text-[var(--ink)] pt-6 section-fade">
+      <div className="max-w-7xl mx-auto w-full px-6 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <aside className="hidden lg:block lg:col-span-3">
+          <div className="sticky top-24 space-y-2">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => scrollToSection(section.id)}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-md text-xs font-semibold tracking-wide border-2 transition-colors ${
+                  activeSection === section.id
+                    ? "bg-[var(--accent)] text-white border-[var(--accent-strong)]"
+                    : "bg-[var(--surface-strong)] text-[var(--muted)] border-[var(--line)] hover:text-[var(--ink)]"
+                }`}
+              >
+                <section.icon className="w-4 h-4" />
+                {section.label}
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        <div className="lg:col-span-9 space-y-12 pb-16">
+          <section id="overview" className="scroll-mt-24">
+            <Card className="p-7 bg-[var(--surface)]">
+              <h2 className="text-3xl font-bold mb-3">Methodology Overview</h2>
+              <p className="text-[var(--muted)] leading-relaxed">
+                The platform combines Earth Engine feature extraction, ecosystem-aware carbon logic, and model-assisted inference in the compute pipeline.
+                It is designed for pre-feasibility analysis, screening, and portfolio-level prioritization.
+              </p>
+
+              <div className="grid md:grid-cols-3 gap-4 mt-6">
+                <div className="p-4 rounded-lg border-2 border-[var(--line)] bg-[var(--surface-strong)]">
+                  <Satellite className="w-6 h-6 text-[var(--accent)] mb-2" />
+                  <h3 className="font-semibold mb-1">Satellite Inputs</h3>
+                  <p className="text-sm text-[var(--muted)]">Sentinel-2, GEDI, OpenLandMap, CHIRPS, MODIS, SRTM.</p>
                 </div>
-
-                {/* Main Content */}
-                <div className="lg:col-span-9 space-y-12 pb-24">
-
-                    {/* Overview */}
-                    <section id="overview" className="scroll-mt-24">
-                        <div className="mb-6">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-2">Overview</h2>
-                            <p className="text-gray-600 leading-relaxed">
-                                The Carbon Offset Land Analyzer uses advanced satellite imagery and geospatial data to estimate the environmental impact and carbon sequestration potential of land parcels. This guide explains how we calculate these metrics.
-                            </p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <Card className="p-5 border-none shadow-sm bg-blue-50/50">
-                                <Satellite className="w-8 h-8 text-blue-600 mb-3" />
-                                <h3 className="font-semibold text-gray-900 mb-1">Satellite Analysis</h3>
-                                <p className="text-sm text-gray-600">Real-time analysis using Sentinel-2 and GEDI data.</p>
-                            </Card>
-                            <Card className="p-5 border-none shadow-sm bg-green-50/50">
-                                <Leaf className="w-8 h-8 text-green-600 mb-3" />
-                                <h3 className="font-semibold text-gray-900 mb-1">Ecosystem Logic</h3>
-                                <p className="text-sm text-gray-600">Tailored calculations for Forests, Wetlands, and more.</p>
-                            </Card>
-                            <Card className="p-5 border-none shadow-sm bg-amber-50/50">
-                                <Layers className="w-8 h-8 text-amber-600 mb-3" />
-                                <h3 className="font-semibold text-gray-900 mb-1">Soil Depth</h3>
-                                <p className="text-sm text-gray-600">Variable soil depth analysis for accurate SOC estimates.</p>
-                            </Card>
-                        </div>
-                    </section>
-
-                    {/* Data Sources */}
-                    <section id="data-sources" className="scroll-mt-24">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Data Sources</h2>
-                        <Card className="overflow-hidden">
-                            <div className="divide-y divide-gray-100">
-                                <div className="p-5 flex gap-4 items-start">
-                                    <div className="p-2 bg-blue-100 rounded-lg text-blue-600 mt-1"><Satellite className="w-5 h-5" /></div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">Sentinel-2 (ESA)</h3>
-                                        <p className="text-sm text-gray-600 mt-1">Used for calculating Vegetation Indices (NDVI, EVI) to assess plant health and density. 10m resolution.</p>
-                                    </div>
-                                </div>
-                                <div className="p-5 flex gap-4 items-start">
-                                    <div className="p-2 bg-green-100 rounded-lg text-green-600 mt-1"><Leaf className="w-5 h-5" /></div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">GEDI (NASA)</h3>
-                                        <p className="text-sm text-gray-600 mt-1">Global Ecosystem Dynamics Investigation lidar data used for Canopy Height and Biomass estimation.</p>
-                                    </div>
-                                </div>
-                                <div className="p-5 flex gap-4 items-start">
-                                    <div className="p-2 bg-amber-100 rounded-lg text-amber-600 mt-1"><Layers className="w-5 h-5" /></div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">OpenLandMap</h3>
-                                        <p className="text-sm text-gray-600 mt-1">Provides Soil Organic Carbon (SOC) and Bulk Density data at various depths.</p>
-                                    </div>
-                                </div>
-                                <div className="p-5 flex gap-4 items-start">
-                                    <div className="p-2 bg-cyan-100 rounded-lg text-cyan-600 mt-1"><Droplets className="w-5 h-5" /></div>
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">CHIRPS & SRTM</h3>
-                                        <p className="text-sm text-gray-600 mt-1">Rainfall data (CHIRPS) and Elevation/Slope data (SRTM) for environmental context.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </Card>
-                    </section>
-
-                    {/* Carbon Logic */}
-                    <section id="carbon-logic" className="scroll-mt-24">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Carbon Calculation Logic</h2>
-                        <div className="space-y-6">
-                            <Card className="p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                                    Biomass Carbon
-                                </h3>
-                                <div className="bg-gray-50 rounded-xl p-4 font-mono text-sm text-gray-700 mb-4 border border-gray-200">
-                                    Carbon = Biomass (t/ha) × 0.47
-                                </div>
-                                <p className="text-gray-600 text-sm">
-                                    We estimate the total above-ground biomass density and multiply it by the carbon fraction (0.47) to get the carbon stock in vegetation.
-                                </p>
-                            </Card>
-
-                            <Card className="p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-amber-500" />
-                                    Soil Organic Carbon (SOC)
-                                </h3>
-                                <div className="bg-gray-50 rounded-xl p-4 font-mono text-sm text-gray-700 mb-4 border border-gray-200">
-                                    SOC Total = (SOC% / 100) × Bulk Density × Depth × Area
-                                </div>
-                                <p className="text-gray-600 text-sm">
-                                    Calculated based on the selected soil depth (0-30cm, 0-100cm, etc.). We aggregate SOC percentage and bulk density layers to determine the total carbon stored in the soil.
-                                </p>
-                            </Card>
-
-                            <Card className="p-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                    Sequestration Potential
-                                </h3>
-                                <div className="bg-gray-50 rounded-xl p-4 font-mono text-sm text-gray-700 mb-4 border border-gray-200">
-                                    Annual CO₂ = Ecosystem Rate × Area (ha)
-                                </div>
-                                <p className="text-gray-600 text-sm mb-4">
-                                    We classify the land cover (Forest, Wetland, etc.) and apply specific sequestration rates:
-                                </p>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                                    <div className="bg-gray-100 p-2 rounded text-center">Forest: 8.0 t/ha/yr</div>
-                                    <div className="bg-gray-100 p-2 rounded text-center">Mangrove: 10.0 t/ha/yr</div>
-                                    <div className="bg-gray-100 p-2 rounded text-center">Wetland: 4.0 t/ha/yr</div>
-                                    <div className="bg-gray-100 p-2 rounded text-center">Grassland: 1.5 t/ha/yr</div>
-                                </div>
-                            </Card>
-                        </div>
-                    </section>
-
-                    {/* Risk Factors */}
-                    <section id="risk-factors" className="scroll-mt-24">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-6">Risk Factors</h2>
-                        <Card className="p-6 bg-red-50/30 border-red-100">
-                            <div className="flex items-start gap-4">
-                                <AlertTriangle className="w-6 h-6 text-red-500 mt-1" />
-                                <div>
-                                    <h3 className="font-semibold text-gray-900 mb-2">Risk-Adjusted Estimates</h3>
-                                    <p className="text-gray-600 text-sm mb-4">
-                                        We discount the potential carbon revenue based on ecosystem-specific risks to ensure conservative and realistic estimates.
-                                    </p>
-                                    <div className="bg-white rounded-xl p-4 border border-red-100 space-y-2">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-600">Fire Risk</span>
-                                            <span className="font-medium text-gray-900">1% - 8% deduction</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-600">Drought Risk</span>
-                                            <span className="font-medium text-gray-900">1% - 8% deduction</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-600">Trend Loss</span>
-                                            <span className="font-medium text-gray-900">1% - 5% deduction</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </Card>
-                    </section>
-
+                <div className="p-4 rounded-lg border-2 border-[var(--line)] bg-[var(--surface-strong)]">
+                  <Leaf className="w-6 h-6 text-[var(--accent)] mb-2" />
+                  <h3 className="font-semibold mb-1">Ecosystem Rules</h3>
+                  <p className="text-sm text-[var(--muted)]">WorldCover-based class logic and climate-aware sequestration rates.</p>
                 </div>
+                <div className="p-4 rounded-lg border-2 border-[var(--line)] bg-[var(--surface-strong)]">
+                  <Layers className="w-6 h-6 text-[var(--accent)] mb-2" />
+                  <h3 className="font-semibold mb-1">Depth-Aware SOC</h3>
+                  <p className="text-sm text-[var(--muted)]">SOC layer summation for 0-30cm, 0-100cm, and 0-200cm depths.</p>
+                </div>
+              </div>
+            </Card>
+          </section>
+
+          <section id="data-sources" className="scroll-mt-24">
+            <h2 className="text-2xl font-bold mb-5">Data Sources</h2>
+            <Card className="overflow-hidden">
+              <div className="divide-y-2 divide-[var(--line)]">
+                <SourceRow
+                  icon={<Satellite className="w-5 h-5" />}
+                  title="Sentinel-2 (COPERNICUS/S2_SR_HARMONIZED)"
+                  text="NDVI/EVI vegetation features from cloud-masked composites at 10m-scale analysis."
+                />
+                <SourceRow
+                  icon={<Leaf className="w-5 h-5" />}
+                  title="GEDI (L2A/L4A)"
+                  text="Canopy structure (`rh98`) and aboveground biomass density (`agbd`) with quality-aware routing and fallback handling."
+                />
+                <SourceRow
+                  icon={<Layers className="w-5 h-5" />}
+                  title="OpenLandMap Soil Layers"
+                  text="Soil organic carbon and bulk density rasters used in layer-sum SOC calculations."
+                />
+                <SourceRow
+                  icon={<Droplets className="w-5 h-5" />}
+                  title="CHIRPS, MODIS, SRTM"
+                  text="Rainfall totals/anomalies, burn history, and terrain derivatives (elevation/slope/aspect)."
+                />
+              </div>
+            </Card>
+          </section>
+
+          <section id="carbon-logic" className="scroll-mt-24">
+            <h2 className="text-2xl font-bold mb-5">Carbon Logic</h2>
+            <div className="space-y-5">
+              <FormulaCard
+                title="Biomass Carbon"
+                formula="C_biomass (tC/ha) = biomass_total (t/ha) × 0.47"
+                text="Total biomass includes aboveground and belowground components; carbon fraction is fixed at 0.47."
+              />
+              <FormulaCard
+                title="SOC Layer Summation"
+                formula="SOC_layer (tC/ha) = 0.1 × BD(g/cm³) × SOC(g/kg) × thickness(cm)"
+                text="Selected depth profile is summed across all included layers to produce SOC per hectare."
+              />
+              <FormulaCard
+                title="Annual and 20-Year CO₂"
+                formula="annual_co2 = sequestration_rate × area_ha,  co2_20yr = annual_co2 × 20"
+                text="Sequestration rate depends on ecosystem and climate/rainfall rules in the backend ecosystem service."
+              />
             </div>
+          </section>
+
+          <section id="risk-factors" className="scroll-mt-24">
+            <h2 className="text-2xl font-bold mb-5">Risk Factors</h2>
+            <Card className="p-6 bg-[var(--surface)] border-[var(--line-strong)]">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-6 h-6 text-[var(--warn)] mt-1" />
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Risk-Adjusted Outcome</h3>
+                  <p className="text-[var(--muted)] text-sm mb-4">
+                    Fire risk, drought risk, and trend-loss factors are combined with trend indicators (NDVI trend, burn history, rainfall anomaly)
+                    to produce conservative risk-adjusted 20-year CO₂ estimates.
+                  </p>
+                  <div className="grid sm:grid-cols-3 gap-3 text-sm">
+                    <div className="rounded-lg border-2 border-[var(--line)] bg-[var(--surface-strong)] p-3">
+                      <div className="font-semibold">Fire Risk</div>
+                      <div className="text-[var(--muted)] text-xs mt-1">Base ecosystem risk + burn-history adjustments</div>
+                    </div>
+                    <div className="rounded-lg border-2 border-[var(--line)] bg-[var(--surface-strong)] p-3">
+                      <div className="font-semibold">Drought Risk</div>
+                      <div className="text-[var(--muted)] text-xs mt-1">Raised under severe rainfall anomaly</div>
+                    </div>
+                    <div className="rounded-lg border-2 border-[var(--line)] bg-[var(--surface-strong)] p-3">
+                      <div className="font-semibold">Trend Loss</div>
+                      <div className="text-[var(--muted)] text-xs mt-1">Adjusted by NDVI trajectory class</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </section>
         </div>
-    );
+      </div>
+    </div>
+  );
+}
+
+function SourceRow({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+  return (
+    <div className="p-5 flex gap-4 items-start bg-[var(--surface-strong)]">
+      <div className="p-2 border-2 border-[var(--line)] rounded-md text-[var(--accent)] mt-0.5">{icon}</div>
+      <div>
+        <h3 className="font-semibold text-[var(--ink)]">{title}</h3>
+        <p className="text-sm text-[var(--muted)] mt-1">{text}</p>
+      </div>
+    </div>
+  );
+}
+
+function FormulaCard({ title, formula, text }: { title: string; formula: string; text: string }) {
+  return (
+    <Card className="p-6">
+      <h3 className="text-lg font-semibold text-[var(--ink)] mb-3">{title}</h3>
+      <div className="bg-[var(--surface)] rounded-md p-3 font-mono text-sm text-[var(--ink)] mb-3 border-2 border-[var(--line)]">
+        {formula}
+      </div>
+      <p className="text-sm text-[var(--muted)]">{text}</p>
+    </Card>
+  );
 }

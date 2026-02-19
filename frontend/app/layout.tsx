@@ -10,18 +10,18 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 text-gray-900 antialiased">
-        <div className="min-h-screen flex flex-col">
+      <body className="min-h-screen text-[var(--ink)] antialiased">
+        <div className="min-h-screen flex flex-col app-shell">
           <NavBar />
-          <main className="flex-1">
+          <main className="flex-1 relative z-10">
             {children}
           </main>
-          <footer className="border-t border-gray-200 bg-white/50 backdrop-blur-sm py-8 mt-16">
+          <footer className="mt-16 border-t-2 border-[var(--line)] bg-[var(--surface)] py-10 relative z-10">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <div className="text-center text-sm text-gray-600">
-                <p className="font-semibold text-gray-900 mb-2">Offset Guesser</p>
-                <p>Powered by Google Earth Engine & Advanced Geospatial Analysis</p>
-                <p className="mt-2 text-xs text-gray-500">© 2024 Offset Guesser. Making carbon offset projects accessible.</p>
+              <div className="grid gap-2 text-center text-sm text-[var(--muted)]">
+                <p className="font-semibold tracking-wide text-[var(--ink)] uppercase">Offset Guesser</p>
+                <p>Earth Engine-based carbon intelligence for project screening and planning.</p>
+                <p className="text-xs">© 2026 Offset Guesser. Open/public-data-first carbon analysis.</p>
               </div>
             </div>
           </footer>
