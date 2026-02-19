@@ -87,6 +87,14 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         raise RuntimeError("GEE is not configured. Set GEE_SERVICE_ACCOUNT and GEE_PRIVATE_KEY in backend/.env")
 
     geom = _ee_geometry_from_geojson(geojson)
+
+    # Canonical soil-depth source is API argument.
+    soil_depth_str = str(soil_depth or "0-30cm")
+    target_depth_cm = 30
+    if "200" in soil_depth_str:
+        target_depth_cm = 200
+    elif "100" in soil_depth_str:
+        target_depth_cm = 100
     
     # DEBUG: Verify coordinates and extract latitude
     latitude_deg = 0.0
@@ -574,23 +582,13 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         {'band': 'b200', 'thickness': 100, 'depth_max': 200},
     ]
     
-    # Determine target depth from input (default 30cm)
-    target_depth_cm = 30
-    if isinstance(geojson, dict) and 'soil_depth' in geojson:
-        # Handle if passed in geojson dict (unlikely but safe)
-        d_str = geojson.get('soil_depth', '0-30cm')
-        if '100' in d_str: target_depth_cm = 100
-        elif '200' in d_str: target_depth_cm = 200
-    
-    # Also check if passed as a separate argument (we'll need to update function signature or handle in caller)
-    # For now, we'll assume the caller might pass it in the geojson dict wrapper or we update the signature.
-    # UPDATE: The function signature is `analyze_polygon(geojson: Any)`. 
-    # We will assume `geojson` might be a dict containing `geometry` and `soil_depth` 
-    # OR we update the signature. Let's update the signature in a separate step if needed, 
-    # but for now let's extract it if present or default to 30.
-    
-    # Actually, let's update the function signature to accept soil_depth explicitly in the next step.
-    # For this replacement, we'll use a local variable that we'll hook up.
+    # Backward-compatible override for wrapped geojson payloads that include soil_depth.
+    if isinstance(geojson, dict) and 'soil_depth' in geojson and soil_depth_str == "0-30cm":
+        d_str = str(geojson.get('soil_depth', '0-30cm'))
+        if '200' in d_str:
+            target_depth_cm = 200
+        elif '100' in d_str:
+            target_depth_cm = 100
     
     soc_total_tc_ha = 0.0
     soc_details = {
@@ -719,11 +717,12 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
     except Exception:
         metrics_dict['rainfall'] = ee.Number(0)
     
-    # SRTM elevation and slope
+    # SRTM elevation, slope, and aspect
     try:
         srtm = ee.Image('USGS/SRTMGL1_003')
         elevation = srtm.select('elevation')
         slope = ee.Terrain.slope(elevation)
+        aspect = ee.Terrain.aspect(elevation)
         elevation_mean = elevation.reduceRegion(
             ee.Reducer.mean(), 
             geom, 
@@ -738,11 +737,20 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
             maxPixels=1e9,
             bestEffort=True
         ).get('slope')
+        aspect_mean = aspect.reduceRegion(
+            ee.Reducer.mean(),
+            geom,
+            scale=30,
+            maxPixels=1e9,
+            bestEffort=True
+        ).get('aspect')
         metrics_dict['elevation'] = elevation_mean
         metrics_dict['slope'] = slope_mean
+        metrics_dict['aspect'] = aspect_mean
     except Exception:
         metrics_dict['elevation'] = ee.Number(0)
         metrics_dict['slope'] = ee.Number(0)
+        metrics_dict['aspect'] = ee.Number(0)
     
     
     # TIME-SERIES TRENDS ANALYSIS (2020-2024, 5 years)
@@ -776,7 +784,7 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
                     s2_median = s2_year.median()
                     nir_y = s2_median.select('B8').divide(10000)
                     red_y = s2_median.select('B4').divide(10000)
-                    ndvi_y = nir_y.subtract(red_y).divide(nir_y.add(red_y))
+                    ndvi_y = nir_y.subtract(red_y).divide(nir_y.add(red_y)).rename('NDVI')
                     
                     ndvi_mean_y = ndvi_y.reduceRegion(
                         ee.Reducer.mean(),
@@ -786,7 +794,7 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
                         bestEffort=True
                     ).getInfo()
                     
-                    ndvi_val = float(ndvi_mean_y.get('B8') or 0.0)
+                    ndvi_val = float(ndvi_mean_y.get('NDVI') or 0.0)
                     ndvi_yearly.append(ndvi_val)
                 else:
                     ndvi_yearly.append(None)
@@ -1114,27 +1122,45 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
     # Evaluate all Earth Engine expressions to Python at once
     result = ee.Dictionary(metrics_dict).getInfo()
     
-    # Calculate latitude from geometry centroid for climate-specific rates
+    # Calculate centroid for climate-specific rates and feature context.
+    longitude = 0.0
     try:
         centroid = geom.centroid().coordinates().getInfo()
         latitude = float(centroid[1]) if centroid else 0.0
+        longitude = float(centroid[0]) if centroid else 0.0
     except Exception:
         latitude = 0.0
+        longitude = 0.0
+
+    ndvi_value = float(result.get('ndvi') or 0.0)
+    canopy_cover = max(0.0, min(100.0, ndvi_value * 100.0))
     
-    # Return with Python values for canopy_height and land_cover (already computed)
+    # Return with Python values for canopy_height and land_cover (already computed).
     return {
-        'ndvi': float(result.get('ndvi') or 0.0),
+        'ndvi': ndvi_value,
         'evi': float(result.get('evi') or 0.0),
-        'biomass': float(biomass_python),  # Use Python-computed value
+        'biomass': float(result.get('biomass') or biomass_python),  # AGB t/ha
+        'biomass_aboveground': float(result.get('biomass_aboveground') or biomass_python),
+        'biomass_belowground': float(result.get('biomass_belowground') or biomass_belowground),
+        'biomass_total': float(result.get('biomass_total') or biomass_total),
         'biomass_source': biomass_method,  # NEW: Track data source for transparency
+        'root_shoot_ratio': float(result.get('root_shoot_ratio') or root_shoot_ratio),
         'canopy_height': float(canopy_h_mean_python),  # Use Python value directly
+        'gedi_rh98': float(canopy_h_mean_python),
+        'canopy_cover': float(canopy_cover),
+        'gedi_quality_filtered': bool(int(result.get('gedi_quality_filtered') or 0)),
         'soc': float(result.get('soc') or 0.0),
+        'soc_details': soc_details,
+        'soil_depth_applied': f"0-{target_depth_cm}cm",
         'bulk_density': float(result.get('bulk_density') or 0.0),
         'rainfall': float(result.get('rainfall') or 0.0),
+        'rainfall_annual': float(result.get('rainfall') or 0.0),
         'elevation': float(result.get('elevation') or 0.0),
         'slope': float(result.get('slope') or 0.0),
+        'aspect': float(result.get('aspect') or 0.0),
         'land_cover': float(land_cover_class_python),  # Use Python value directly
         'latitude': float(latitude),  # For climate-specific sequestration rates
+        'longitude': float(longitude),
         # Time-series trends
         'ndvi_trend': float(ndvi_trend),
         'ndvi_trend_interpretation': ndvi_trend_interpretation,
@@ -1151,4 +1177,3 @@ def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:
         'gedi_shot_count': int(gedi_shot_count),
         'data_confidence_score': float(data_confidence_score),
     }
-

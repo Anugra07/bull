@@ -13,6 +13,7 @@ from app.routers.polygons import router as polygons_router
 from app.routers.analysis import router as analysis_router
 from app.routers.compute import router as compute_router
 from app.routers.gee_status import router as gee_router
+from app.routers.ml_status import router as ml_router
 
 app = FastAPI(title="Carbon Offset Land Analyzer API", version="0.1.0")
 
@@ -35,3 +36,4 @@ app.include_router(polygons_router)
 app.include_router(analysis_router)
 app.include_router(compute_router)
 app.include_router(gee_router)
+app.include_router(ml_router)

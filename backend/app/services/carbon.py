@@ -1,9 +1,6 @@
 from typing import Dict, Tuple, Optional
-import os
-import joblib
-import pandas as pd
-import numpy as np
-from app.services.ecosystem import get_ecosystem_info, classify_ecosystem
+from app.services.ecosystem import get_ecosystem_info, get_ecosystem_parameters
+from app.services.inference import get_inference_engine
 
 # Legacy default (kept for backward compatibility)
 IPCC_TIER1_DEFAULT_TCO2_HA_YR = 3.0
@@ -12,26 +9,34 @@ IPCC_TIER1_DEFAULT_TCO2_HA_YR = 3.0
 GEDI_MODEL = None
 SOC_MODEL = None
 MODELS_LOADED = False
+VALID_ECOSYSTEMS = {
+    "Forest",
+    "Mangrove",
+    "Cropland",
+    "Grassland",
+    "Wetland",
+    "Shrubland",
+    "Plantation",
+    "Degraded",
+    "Other",
+}
 
 def load_models():
-    """Load ML models from disk if available."""
+    """Refresh runtime inference models and expose a coarse readiness flag."""
     global GEDI_MODEL, SOC_MODEL, MODELS_LOADED
-    if MODELS_LOADED:
-        return
-
-    model_dir = os.path.join(os.getcwd(), 'backend', 'ml', 'models')
-    gedi_path = os.path.join(model_dir, 'gedi_bias_v1.pkl')
-    soc_path = os.path.join(model_dir, 'soc_downscaling_xgb_v1.pkl')
-
     try:
-        if os.path.exists(gedi_path):
-            GEDI_MODEL = joblib.load(gedi_path)
-            print(f"Loaded GEDI model from {gedi_path}")
-        if os.path.exists(soc_path):
-            SOC_MODEL = joblib.load(soc_path)
-            print(f"Loaded SOC model from {soc_path}")
-        MODELS_LOADED = True
+        engine = get_inference_engine()
+        engine.reload()
+        status = engine.status().get("models", {})
+        GEDI_MODEL = engine.gedi_model
+        SOC_MODEL = engine.soc_model
+        MODELS_LOADED = any([
+            bool(status.get("gedi_bias", {}).get("ready")),
+            bool(status.get("soc_downscaling", {}).get("ready")),
+            bool(status.get("stocking_index", {}).get("ready")),
+        ])
     except Exception as e:
+        MODELS_LOADED = False
         print(f"Error loading models: {e}")
 
 def apply_ml_corrections(metrics: Dict[str, float]) -> Dict[str, float]:
@@ -39,60 +44,22 @@ def apply_ml_corrections(metrics: Dict[str, float]) -> Dict[str, float]:
     Apply ML models to correct Biomass and SOC estimates.
     Returns updated metrics dictionary.
     """
-    if not MODELS_LOADED:
-        load_models()
-
-    updated_metrics = metrics.copy()
-    
-    # Prepare input features
-    # We need to reconstruct the DataFrame expected by the models
-    # This requires handling categorical encoding (ecosystem, climate_zone)
-    
     try:
-        # Extract features
-        features = {
-            'gedi_agbd_raw': metrics.get('biomass_raw', metrics.get('biomass', 0.0)),
-            'ndvi_mean': metrics.get('ndvi', 0.0),
-            'evi_mean': metrics.get('evi', 0.0),
-            'elevation': metrics.get('elevation', 0.0),
-            'slope': metrics.get('slope', 0.0),
-            'rainfall_annual': metrics.get('rainfall', 0.0),
-            'latitude': metrics.get('latitude', 0.0),
-            'aspect': metrics.get('aspect', 0.0), # Might be missing in gee.py output
-            'ecosystem': metrics.get('ecosystem_type', 'Unknown'),
-            'climate_zone': 'Tropical' if abs(metrics.get('latitude', 0.0)) < 23.5 else 'Temperate' # simplified
-        }
-        
-        # 1. GEDI Bias Correction
-        if GEDI_MODEL:
-            # Create DF and One-Hot Encode
-            df = pd.DataFrame([features])
-            # We need to match the columns the model was trained on. 
-            # Ideally we pickle the columns list too. For now we assume standard encoding.
-            # Safe approach: catch mismatch errors or try best effort integration.
-            # Reconstruct training columns (simplified for Phase 1 V1)
-            # This is a bit fragile without saving feature names, but works for POC if consistent.
-            
-            # For now, let's skip complex encoding reconstruction and just use numericals if possible, 
-            # OR we mock the encoding expansion.
-            # Real implementation would load 'model_columns.pkl'.
-            
-            # Let's try to pass it if the model accepts it (unlikely with sklearn unless pipeline).
-            # Fallback: Just print we would predict here.
-            # In a real scenario, we'd ensure `df_encoded` matches `rf.feature_names_in_`.
-            
-            try:
-                # Attempt prediction if columns match (unlikely without alignment)
-                # For Phase 1 demo, we might skip actual prediction if alignment fails 
-                # to avoid crushing the app.
-                pass 
-            except:
-                pass
-
+        inference = get_inference_engine().predict(metrics)
+        updated_metrics = dict(inference.get("metrics", metrics))
+        updated_metrics["biomass_source"] = inference.get("biomass_source")
+        updated_metrics["soc_source"] = inference.get("soc_source")
+        updated_metrics["model_version_biomass"] = inference.get("model_version_biomass")
+        updated_metrics["model_version_soc"] = inference.get("model_version_soc")
+        updated_metrics["ml_models_used"] = bool(inference.get("ml_models_used"))
+        updated_metrics["prediction_interval_biomass"] = inference.get("biomass_interval")
+        updated_metrics["prediction_interval_soc"] = inference.get("soc_interval")
+        return updated_metrics
     except Exception as e:
         print(f"ML Correction Error: {e}")
-
-    return updated_metrics
+        fallback = metrics.copy()
+        fallback["ml_models_used"] = False
+        return fallback
 
 
 def calculate_baseline_carbon(
@@ -116,8 +83,12 @@ def calculate_baseline_carbon(
     fire_recent_burn = bool(metrics.get("fire_recent_burn", False))
     rainfall_anomaly_percent = float(metrics.get("rainfall_anomaly_percent", 0.0))
     
-    # Get ecosystem type from land cover
-    _, ecosystem_params = get_ecosystem_info(land_cover_class)
+    # Get ecosystem type from land cover, with optional ML override.
+    ecosystem_type, ecosystem_params = get_ecosystem_info(land_cover_class)
+    override_ecosystem = metrics.get("ecosystem_type")
+    if isinstance(override_ecosystem, str) and override_ecosystem in VALID_ECOSYSTEMS:
+        ecosystem_type = override_ecosystem
+        ecosystem_params = get_ecosystem_parameters(ecosystem_type)
     
     # Determine baseline scenario and degradation factors
     # These represent "business-as-usual" without project intervention
@@ -191,6 +162,7 @@ def compute_carbon(
     drought_risk: Optional[float] = None,
     trend_loss: Optional[float] = None,
     annual_rate_tco2_ha_yr: Optional[float] = None,
+    apply_ml: bool = True,
 ) -> Tuple[Dict[str, float], Dict[str, float]]:
     """
     Compute biomass carbon, SOC total, annual CO2, 20-year CO2, and risk-adjusted CO2.
@@ -209,8 +181,9 @@ def compute_carbon(
       Convert kgC to tCO2e by * (44/12) / 1000.
     """
     
-    # Apply ML Corrections (if models available)
-    metrics = apply_ml_corrections(metrics)
+    # Apply ML corrections unless caller has already applied inference.
+    if apply_ml:
+        metrics = apply_ml_corrections(metrics)
     
     # Get ecosystem classification from land cover
     land_cover_class = int(metrics.get("land_cover", 0))
@@ -222,6 +195,10 @@ def compute_carbon(
     rainfall = float(metrics.get("rainfall", 0.0))
     
     ecosystem_type, ecosystem_params = get_ecosystem_info(land_cover_class, latitude, rainfall)
+    override_ecosystem = metrics.get("ecosystem_type")
+    if isinstance(override_ecosystem, str) and override_ecosystem in VALID_ECOSYSTEMS:
+        ecosystem_type = override_ecosystem
+        ecosystem_params = get_ecosystem_parameters(ecosystem_type, latitude, rainfall)
     
     # Use ecosystem-specific parameters if not explicitly provided
     if annual_rate_tco2_ha_yr is None:
@@ -362,6 +339,6 @@ def compute_carbon(
             "trend_loss": trend_loss,
             "adj_factor": adj_factor,
             "sequestration_rate": annual_rate_tco2_ha_yr,  # Rate used (tCO2e/ha/yr)
-            "ml_models_used": True if MODELS_LOADED else False, # Flag if ML was active
+            "ml_models_used": bool(metrics.get("ml_models_used", False)),
         },
     )

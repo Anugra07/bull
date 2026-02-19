@@ -1,6 +1,7 @@
 import ee
 from datetime import datetime, timedelta
 from typing import Dict, Any, List
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Ensure GEE is initialized (usually done in app startup, but safe to check)
 # from app.services.gee import init_gee
@@ -55,6 +56,13 @@ def extract_features_for_plot(latitude: float, longitude: float, date_str: str) 
             .select('agbd') \
             .mean() \
             .rename('gedi_agbd')
+
+        gedi_rh98 = ee.ImageCollection('LARSE/GEDI/GEDI02_A_002_MONTHLY') \
+            .filterBounds(plot_geometry) \
+            .filterDate(gedi_start, gedi_end) \
+            .select('rh98') \
+            .mean() \
+            .rename('gedi_rh98')
             
         # 3. Terrain (SRTM)
         srtm = ee.Image('USGS/SRTMGL1_003')
@@ -72,10 +80,29 @@ def extract_features_for_plot(latitude: float, longitude: float, date_str: str) 
             .select('precipitation') \
             .sum() \
             .rename('rainfall_annual')
+
+        # 6. Sentinel-1 SAR (structure signal, cloud-independent)
+        s1 = ee.ImageCollection('COPERNICUS/S1_GRD') \
+            .filterBounds(plot_geometry) \
+            .filterDate(start_date, end_date) \
+            .filter(ee.Filter.eq('instrumentMode', 'IW')) \
+            .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VV')) \
+            .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VH')) \
+            .select(['VV', 'VH']) \
+            .median()
+
+        # 7. ERA5-Land monthly aggregates (temperature and total precipitation)
+        era5 = ee.ImageCollection('ECMWF/ERA5_LAND/MONTHLY_AGGR') \
+            .filterDate(f'{year}-01-01', f'{year}-12-31')
+        era_temp = era5.select('temperature_2m').mean().rename('era5_temp_2m')
+        era_precip = era5.select('total_precipitation_sum').sum().rename('era5_total_precip')
+
+        # Canopy cover proxy: NDVI threshold fraction (0-100)
+        canopy_cover = ndvi.gt(0.5).rename('canopy_cover')
             
         # Combine all features into one image for reduction
         features_image = ee.Image.cat([
-            ndvi, evi, gedi, elevation, slope, aspect, rainfall
+            ndvi, evi, gedi, gedi_rh98, elevation, slope, aspect, rainfall, s1, era_temp, era_precip, canopy_cover
         ])
         
         # Reduce region to get mean values for the plot
@@ -93,30 +120,61 @@ def extract_features_for_plot(latitude: float, longitude: float, date_str: str) 
             "ndvi_mean": stats.get('ndvi'),
             "evi_mean": stats.get('evi'),
             "gedi_agbd_raw": stats.get('gedi_agbd'),
+            "gedi_rh98": stats.get('gedi_rh98'),
             "elevation": stats.get('elevation'),
             "slope": stats.get('slope'),
             "aspect": stats.get('aspect'),
             "rainfall_annual": stats.get('rainfall_annual'),
+            "s1_vv": stats.get('VV'),
+            "s1_vh": stats.get('VH'),
+            "era5_temp_2m": stats.get('era5_temp_2m'),
+            "era5_total_precip": stats.get('era5_total_precip'),
+            "canopy_cover": (stats.get('canopy_cover') or 0.0) * 100.0 if stats.get('canopy_cover') is not None else None,
             # Add metadata
-            "extraction_date": datetime.now().isoformat()
+            "extraction_date": datetime.now().isoformat(),
+            "feature_version": "india_v1",
+            "extraction_mode": "extract_only_streaming",
         }
         
     except Exception as e:
         print(f"Error extracting features for plot ({latitude}, {longitude}): {e}")
         return {}
 
-def extract_features_batch(plots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def extract_features_batch(
+    plots: List[Dict[str, Any]],
+    max_workers: int = 4,
+) -> List[Dict[str, Any]]:
     """
     Extract features for a batch of plots.
-    TODO: Optimize using ee.FeatureCollection mapping for large batches.
+    Uses bounded concurrency to reduce wall-clock time without loading
+    full datasets locally.
     """
-    results = []
-    for plot in plots:
+    if not plots:
+        return []
+
+    workers = max(1, min(max_workers, 8))
+    results: List[Dict[str, Any]] = [None] * len(plots)  # type: ignore
+
+    def _run(index: int, plot: Dict[str, Any]) -> Dict[str, Any]:
         features = extract_features_for_plot(
-            plot['latitude'], 
-            plot['longitude'], 
-            plot['measurement_date']
+            plot['latitude'],
+            plot['longitude'],
+            plot['measurement_date'],
         )
-        # Merge original plot data with extracted features
-        results.append({**plot, "features": features})
+        return {**plot, "features": features}
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {
+            executor.submit(_run, idx, plot): idx
+            for idx, plot in enumerate(plots)
+        }
+        for future in as_completed(futures):
+            idx = futures[future]
+            try:
+                results[idx] = future.result()
+            except Exception as e:
+                plot = plots[idx]
+                print(f"Batch extraction failed for plot {idx}: {e}")
+                results[idx] = {**plot, "features": {}}
+
     return results

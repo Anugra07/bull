@@ -1,0 +1,21 @@
+{
+  "version": "soc_downscaling_xgb_v1",
+  "trained_at": "2026-02-19T05:59:25.061099+00:00",
+  "n_samples": 100,
+  "rmse": 14.675210527571746,
+  "r2": 0.7653228496147153,
+  "feature_names": [
+    "ndvi_mean",
+    "evi_mean",
+    "elevation",
+    "slope",
+    "aspect",
+    "rainfall_annual",
+    "latitude",
+    "ecosystem_Forest",
+    "ecosystem_Grassland",
+    "ecosystem_Wetland"
+  ],
+  "policy": "open_public_no_personal_iot",
+  "geo_scope": "india_first"
+}

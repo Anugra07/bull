@@ -1,5 +1,7 @@
 import os
 import sys
+import json
+from datetime import datetime, timezone
 import pandas as pd
 import numpy as np
 import joblib
@@ -13,8 +15,9 @@ sys.path.append(os.path.join(os.getcwd(), 'backend'))
 try:
     from supabase import create_client, Client
 except ImportError:
-    print("supabase-py not found. Please install dependencies.")
-    sys.exit(1)
+    print("supabase-py not found. Falling back to mock data.")
+    create_client = None
+    Client = None
 
 # Initialize Supabase Client
 url: str = os.environ.get("SUPABASE_URL")
@@ -26,8 +29,8 @@ if not url or not key:
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
-if not url or not key:
-    print("Warning: Supabase credentials not found. Using MOCK data.")
+if not url or not key or create_client is None:
+    print("Warning: Supabase unavailable. Using MOCK data.")
     supabase = None
 else:
     supabase: Client = create_client(url, key)
@@ -145,6 +148,21 @@ def train_soc_model():
     
     joblib.dump(gbr, model_path)
     print(f"SOC Model saved to {model_path}")
+
+    meta_path = os.path.join(model_dir, 'soc_downscaling_xgb_v1.meta.json')
+    metadata = {
+        "version": "soc_downscaling_xgb_v1",
+        "trained_at": datetime.now(timezone.utc).isoformat(),
+        "n_samples": int(len(df)),
+        "rmse": float(rmse),
+        "r2": float(r2),
+        "feature_names": [str(x) for x in list(X.columns)],
+        "policy": "open_public_no_personal_iot",
+        "geo_scope": "india_first",
+    }
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(metadata, f, indent=2)
+    print(f"SOC model metadata saved to {meta_path}")
 
 if __name__ == "__main__":
     train_soc_model()

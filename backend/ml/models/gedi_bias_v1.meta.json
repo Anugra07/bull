@@ -1,0 +1,21 @@
+{
+  "version": "gedi_bias_v1",
+  "trained_at": "2026-02-19T05:59:25.064966+00:00",
+  "n_samples": 100,
+  "rmse": 19.572038821863842,
+  "r2": 0.9677102427669906,
+  "feature_names": [
+    "gedi_agbd_raw",
+    "ndvi_mean",
+    "evi_mean",
+    "elevation",
+    "slope",
+    "rainfall_annual",
+    "latitude",
+    "ecosystem_Grassland",
+    "ecosystem_Shrubland",
+    "climate_zone_Tropical"
+  ],
+  "policy": "open_public_no_personal_iot",
+  "geo_scope": "india_first"
+}

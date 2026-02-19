@@ -1,0 +1,38 @@
+{
+  "version": "stocking_index_calibrated_v1",
+  "trained_at": "2026-02-19T05:59:04.586412+00:00",
+  "ecosystems": [
+    {
+      "ecosystem": "tropical_forest",
+      "rmse": 15.61,
+      "r2": 0.946,
+      "n_samples": 200
+    },
+    {
+      "ecosystem": "temperate_forest",
+      "rmse": 13.75,
+      "r2": 0.954,
+      "n_samples": 150
+    },
+    {
+      "ecosystem": "grassland",
+      "rmse": 15.84,
+      "r2": 0.87,
+      "n_samples": 100
+    },
+    {
+      "ecosystem": "mangrove",
+      "rmse": 18.15,
+      "r2": 0.923,
+      "n_samples": 80
+    },
+    {
+      "ecosystem": "plantation",
+      "rmse": 17.4,
+      "r2": 0.905,
+      "n_samples": 120
+    }
+  ],
+  "policy": "open_public_no_personal_iot",
+  "geo_scope": "india_first"
+}
