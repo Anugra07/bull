@@ -1,15 +1,33 @@
 import os
 from typing import Any, Dict
 import json
+import importlib
 
-# Google Earth Engine
-try:
-    import ee  # type: ignore
-except Exception:  # pragma: no cover
-    ee = None  # Will handle gracefully below
+ee = None
+_EE_IMPORT_ATTEMPTED = False
 
 _GEE_READY = False
 _GEE_ERR: str | None = None
+
+
+def _load_ee():
+    global ee
+    global _EE_IMPORT_ATTEMPTED
+    global _GEE_ERR
+
+    if ee is not None:
+        return ee
+    if _EE_IMPORT_ATTEMPTED:
+        return None
+
+    _EE_IMPORT_ATTEMPTED = True
+    try:
+        ee = importlib.import_module("ee")
+        return ee
+    except Exception as e:  # pragma: no cover
+        _GEE_ERR = f"ee module not available: {e}"
+        ee = None
+        return None
 
 
 def init_gee() -> bool:
@@ -17,8 +35,9 @@ def init_gee() -> bool:
     global _GEE_ERR
     if _GEE_READY:
         return True
-    if ee is None:
-        _GEE_ERR = "ee module not available"
+
+    ee_module = _load_ee()
+    if ee_module is None:
         return False
 
     # Prefer service account JSON via env var GEE_PRIVATE_KEY (JSON string)
@@ -41,13 +60,13 @@ def init_gee() -> bool:
                 "https://www.googleapis.com/auth/devstorage.read_write",
             ]
             credentials = service_account.Credentials.from_service_account_info(info, scopes=scopes)
-            ee.Initialize(credentials)
+            ee_module.Initialize(credentials)
         elif os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
             # Use ADC if a credentials file path is provided
-            ee.Initialize()
+            ee_module.Initialize()
         else:
             # Fallback to default (may work only in already-authorized environments)
-            ee.Initialize()
+            ee_module.Initialize()
         _GEE_READY = True
         _GEE_ERR = None
     except Exception as e:
@@ -62,6 +81,10 @@ def init_gee() -> bool:
 
 
 def _ee_geometry_from_geojson(geojson: Any):
+    ee_module = _load_ee()
+    if ee_module is None:
+        raise RuntimeError(_GEE_ERR or "ee module not available")
+
     # Accept FeatureCollection, Feature, or Geometry
     gj = geojson
     if isinstance(gj, dict):
@@ -75,7 +98,7 @@ def _ee_geometry_from_geojson(geojson: Any):
         # Handle Feature - extract geometry
         elif gj.get("type") == "Feature":
             gj = gj.get("geometry")
-    return ee.Geometry(gj)
+    return ee_module.Geometry(gj)
 
 
 def analyze_polygon(geojson: Any, soil_depth: str = "0-30cm") -> Dict[str, Any]:

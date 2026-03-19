@@ -1,6 +1,5 @@
 from typing import Dict, Tuple, Optional
 from app.services.ecosystem import get_ecosystem_info, get_ecosystem_parameters
-from app.services.inference import get_inference_engine
 
 # Legacy default (kept for backward compatibility)
 IPCC_TIER1_DEFAULT_TCO2_HA_YR = 3.0
@@ -25,6 +24,8 @@ def load_models():
     """Refresh runtime inference models and expose a coarse readiness flag."""
     global GEDI_MODEL, SOC_MODEL, MODELS_LOADED
     try:
+        from app.services.inference import get_inference_engine
+
         engine = get_inference_engine()
         engine.reload()
         status = engine.status().get("models", {})
@@ -45,6 +46,8 @@ def apply_ml_corrections(metrics: Dict[str, float]) -> Dict[str, float]:
     Returns updated metrics dictionary.
     """
     try:
+        from app.services.inference import get_inference_engine
+
         inference = get_inference_engine().predict(metrics)
         updated_metrics = dict(inference.get("metrics", metrics))
         updated_metrics["biomass_source"] = inference.get("biomass_source")

@@ -5,7 +5,6 @@ from app.schemas import ComputeIn, ComputeOut, ComputeDirectIn
 from app.deps.supabase_client import get_supabase
 from app.services.gee import analyze_polygon
 from app.services.carbon import compute_carbon
-from app.services.inference import get_inference_engine
 from app.utils.geo import normalize_geometry, clean_and_validate
 
 router = APIRouter(prefix="/compute", tags=["compute"])
@@ -47,6 +46,8 @@ def _compute_from_geometry(
     metrics = analyze_polygon(geometry, soil_depth=soil_depth)
 
     # Apply model inference before carbon accounting.
+    from app.services.inference import get_inference_engine
+
     inference = get_inference_engine().predict(metrics)
     metrics = inference["metrics"]
 
